@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MegaMart Central Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="login-screen" class="login-screen hidden">
+    <div class="login-card">
+        <div class="login-brand">
+            <div class="brand-logo">M</div>
+            <h1>MegaMart</h1>
+            <p class="brand-sub">Central Management System</p>
+        </div>
+        <form id="login-form" class="login-form" autocomplete="off">
+            <div id="login-error" class="alert-box error hidden"></div>
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" placeholder="e.g. sales" required>
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="••••••••" required>
+            <button type="submit" id="login-btn" class="btn btn-primary btn-block">Sign In</button>
+            <div class="demo-hint">
+                <strong>Demo accounts</strong>
+                <span>admin / admin123 &nbsp;·&nbsp; manager / manager123</span>
+                <span>sales / sales123 &nbsp;·&nbsp; procurement / procurement123</span>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============ APP SHELL ============ -->
+<div id="app" class="app hidden">
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo small">M</div>
+            <div>
+                <strong>MegaMart</strong>
+                <small>MCMS</small>
+            </div>
+        </div>
+        <nav id="sidebar-nav" class="sidebar-nav"></nav>
+        <div class="sidebar-footer" id="sidebar-user"></div>
+    </aside>
+
+    <div class="main">
+        <header class="topbar">
+            <button class="hamburger" id="hamburger" aria-label="Menu">☰</button>
+            <div class="page-title" id="page-title">Dashboard</div>
+            <div class="topbar-actions">
+                <button class="icon-btn" id="notif-btn" title="Notifications">🔔
+                    <span class="badge-dot hidden" id="notif-badge"></span>
+                </button>
+                <div class="topbar-user">
+                    <span id="user-role" class="role-tag"></span>
+                    <span id="user-name-top"></span>
+                    <button class="btn btn-ghost" id="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="content" id="content">
+            <div class="loader hidden" id="loader"><div class="spinner"></div></div>
+            <div id="view"></div>
+        </main>
+    </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Notification drawer -->
+<div class="drawer-backdrop hidden" id="drawer-backdrop"></div>
+<aside class="notif-drawer hidden" id="notif-drawer">
+    <div class="drawer-head">
+        <strong>Notifications</strong>
+        <button class="icon-btn" id="notif-close">✕</button>
+    </div>
+    <div id="notif-list" class="notif-list"></div>
+</aside>
+
+<!-- Chart.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/app.js"></script>
+</body>
+</html>
