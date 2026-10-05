@@ -31,6 +31,9 @@ public class ProductService {
     private SupplierRepository supplierRepository;
 
     @Inject
+    private PromotionRepository promotionRepository;
+
+    @Inject
     private StockMovementRepository stockMovementRepository;
 
     @Inject
@@ -217,6 +220,15 @@ public class ProductService {
         dto.setMaxStockLevel(p.getMaxStockLevel());
         dto.setStatus(p.getStatus().name());
         dto.setLowStock(p.isLowStock());
+        promotionRepository.findBestActiveForProduct(p.getId(), p.getCategory() != null ? p.getCategory().getId() : null)
+                .ifPresent(promo -> {
+                    dto.setPromotionName(promo.getName());
+                    dto.setPromotionDiscount(promo.getDiscount());
+                    dto.setPromotionalPrice(p.getSellingPrice()
+                            .multiply(java.math.BigDecimal.ONE.subtract(
+                                    promo.getDiscount().divide(new java.math.BigDecimal("100"))))
+                            .setScale(2, java.math.RoundingMode.HALF_UP));
+                });
         if (p.getCategory() != null) {
             dto.setCategoryId(p.getCategory().getId());
             dto.setCategoryName(p.getCategory().getName());

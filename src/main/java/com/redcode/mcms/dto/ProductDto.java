@@ -48,6 +48,9 @@ public class ProductDto {
     private String status;
 
     private boolean lowStock;
+    private String promotionName;
+    private BigDecimal promotionDiscount;
+    private BigDecimal promotionalPrice;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -79,4 +82,10 @@ public class ProductDto {
     public void setStatus(String status) { this.status = status; }
     public boolean isLowStock() { return lowStock; }
     public void setLowStock(boolean lowStock) { this.lowStock = lowStock; }
+    public String getPromotionName() { return promotionName; }
+    public void setPromotionName(String promotionName) { this.promotionName = promotionName; }
+    public BigDecimal getPromotionDiscount() { return promotionDiscount; }
+    public void setPromotionDiscount(BigDecimal promotionDiscount) { this.promotionDiscount = promotionDiscount; }
+    public BigDecimal getPromotionalPrice() { return promotionalPrice; }
+    public void setPromotionalPrice(BigDecimal promotionalPrice) { this.promotionalPrice = promotionalPrice; }
 }

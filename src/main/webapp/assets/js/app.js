@@ -337,8 +337,8 @@
         const el = $('pos-results');
         el.innerHTML = matches.slice(0, 12).map(p => `
             <div class="search-result" data-id="${p.id}">
-                <div><strong>${Api.esc(p.name)}</strong><br><span class="text-muted">Qty in stock: ${p.quantity}</span></div>
-                <div class="result-price">${Api.money(p.sellingPrice)}</div>
+                <div><strong>${Api.esc(p.name)}</strong><br><span class="text-muted">Qty in stock: ${p.quantity}${p.promotionName ? ' · ' + Api.esc(p.promotionName) : ''}</span></div>
+                <div class="result-price">${Api.money(p.promotionalPrice || p.sellingPrice)}${p.promotionalPrice ? `<br><small class="text-muted"><s>${Api.money(p.sellingPrice)}</s> ${p.promotionDiscount}% off</small>` : ''}</div>
             </div>`).join('') || '<div class="empty">No products found</div>';
         el.querySelectorAll('.search-result').forEach(div => {
             div.onclick = () => {
@@ -346,7 +346,7 @@
                 if (!p || p.quantity <= 0) { Api.toast('Product out of stock', 'error'); return; }
                 const line = cart.find(c => c.productId === p.id);
                 if (line) { if (line.quantity < p.quantity) line.quantity++; }
-                else cart.push({ productId: p.id, quantity: 1, name: p.name, price: p.sellingPrice });
+                else cart.push({ productId: p.id, quantity: 1, name: p.name, price: Number(p.promotionalPrice || p.sellingPrice) });
                 renderCart();
             };
         });

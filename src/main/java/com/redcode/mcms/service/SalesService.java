@@ -7,6 +7,7 @@ import com.redcode.mcms.exception.BusinessException;
 import com.redcode.mcms.exception.NotFoundException;
 import com.redcode.mcms.repository.CustomerRepository;
 import com.redcode.mcms.repository.ProductRepository;
+import com.redcode.mcms.repository.PromotionRepository;
 import com.redcode.mcms.repository.SaleRepository;
 import com.redcode.mcms.security.AuthContext;
 import jakarta.ejb.Stateless;
@@ -66,6 +67,9 @@ public class SalesService {
     private FakePaymentService fakePaymentService;
 
     @Inject
+    private PromotionRepository promotionRepository;
+
+    @Inject
     private AuthContext authContext;
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -105,9 +109,17 @@ public class SalesService {
             item.setSale(sale);
             item.setProduct(product);
             item.setQuantity(cartItem.getQuantity());
-            item.setUnitPrice(product.getSellingPrice());
+            BigDecimal unitPrice = product.getSellingPrice();
+            Promotion promotion = promotionRepository.findBestActiveForProduct(product.getId(),
+                    product.getCategory() != null ? product.getCategory().getId() : null).orElse(null);
+            if (promotion != null) {
+                unitPrice = unitPrice
+                        .multiply(BigDecimal.ONE.subtract(promotion.getDiscount().divide(new BigDecimal("100"))))
+                        .setScale(2, RoundingMode.HALF_UP);
+            }
+            item.setUnitPrice(unitPrice);
 
-            BigDecimal lineTotal = product.getSellingPrice()
+            BigDecimal lineTotal = unitPrice
                     .multiply(BigDecimal.valueOf(cartItem.getQuantity()));
             item.setLineTotal(lineTotal);
             subtotal = subtotal.add(lineTotal);

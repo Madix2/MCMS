@@ -5,6 +5,8 @@ import com.redcode.mcms.entity.PromotionStatus;
 import jakarta.ejb.Stateless;
 
 import java.util.List;
+import java.time.LocalDate;
+import java.util.Optional;
 
 /**
  * Data-access for {@link Promotion}.
@@ -26,5 +28,24 @@ public class PromotionRepository extends GenericRepository<Promotion, Long> {
 
     public List<Promotion> findActive() {
         return findByStatus(PromotionStatus.ACTIVE);
+    }
+
+    public Optional<Promotion> findBestActiveForProduct(Long productId, Long categoryId) {
+        List<Promotion> matches = em.createQuery(
+                        "SELECT p FROM Promotion p WHERE p.status = :status "
+                                + "AND (p.product.id = :productId OR p.category.id = :categoryId "
+                                + "OR (p.product IS NULL AND p.category IS NULL)) "
+                                + "AND (p.startDate IS NULL OR p.startDate <= :today) "
+                                + "AND (p.endDate IS NULL OR p.endDate >= :today) "
+                                + "ORDER BY CASE WHEN p.product.id = :productId THEN 0 "
+                                + "WHEN p.category.id = :categoryId THEN 1 ELSE 2 END, p.discount DESC",
+                        Promotion.class)
+                .setParameter("status", PromotionStatus.ACTIVE)
+                .setParameter("productId", productId)
+                .setParameter("categoryId", categoryId)
+                .setParameter("today", LocalDate.now())
+                .setMaxResults(1)
+                .getResultList();
+        return matches.stream().findFirst();
     }
 }
