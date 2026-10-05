@@ -26,7 +26,6 @@
         { label: 'Marketing', icon: '📣', group: true, roles: ['ADMIN','MANAGER','MARKETING'] },
         { key: 'promotions', label: 'Promotions', icon: '🎉', roles: ['ADMIN','MANAGER','MARKETING'] },
         { key: 'campaigns', label: 'Campaigns', icon: '📣', roles: ['ADMIN','MANAGER','MARKETING'] },
-        { key: 'social', label: 'Social Media', icon: '🕸️', roles: ['ADMIN','MANAGER','MARKETING'] },
         { key: 'reports', label: 'Reports', icon: '📈', roles: ['ADMIN','MANAGER','FINANCE','INVENTORY','PROCUREMENT'] },
         { key: 'audit', label: 'Audit Logs', icon: '📜', roles: ['ADMIN','MANAGER'] },
         { key: 'settings', label: 'Settings', icon: '⚙️', roles: ['ADMIN','MANAGER','SALES','INVENTORY','PROCUREMENT','FINANCE','HR','MARKETING'] }
@@ -38,7 +37,7 @@
         'suppliers': 'Suppliers', 'purchase-orders': 'Purchase Orders', 'approvals': 'Purchase Order Approvals',
         'finance': 'Finance Dashboard', 'customers': 'Customers',
         'employees': 'Employees', 'attendance': 'Attendance',
-        'promotions': 'Promotions', 'campaigns': 'Campaigns', 'social': 'Social Media',
+        'promotions': 'Promotions', 'campaigns': 'Campaigns',
         'reports': 'Reports', 'audit': 'Audit Logs', 'settings': 'Settings'
     };
 
@@ -164,7 +163,6 @@
             case 'attendance': load(() => viewAttendance(view)); break;
             case 'promotions': load(() => viewPromotions(view)); break;
             case 'campaigns': load(() => viewCampaigns(view)); break;
-            case 'social': load(() => viewSocial(view)); break;
             case 'reports': load(() => viewReports(view)); break;
             case 'audit': load(() => viewAudit(view)); break;
             case 'settings': load(() => viewSettings(view)); break;
@@ -439,6 +437,7 @@
 
     function showReceipt(sale) {
         const money = Api.money;
+        const isAdmin = Api.user() && Api.user().role === 'ADMIN';
         const rows = sale.items.map(i => `<tr><td>${i.quantity} × ${Api.esc(i.productName)}</td><td class="num">${money(i.lineTotal)}</td></tr>`).join('');
         const change = Math.max(0, sale.changeGiven);
         const modal = document.createElement('div');
@@ -461,12 +460,52 @@
                 </table>
                 <div class="line"></div>
                 <div class="center">Thank you for shopping at MegaMart!</div>
-                <button class="btn btn-primary btn-block mt-2" id="receipt-close">Done</button>
+                 ${isAdmin ? '<button class="btn btn-outline btn-block mt-2" id="receipt-pdf">Download PDF</button>' : ''}
+                 <button class="btn btn-primary btn-block mt-2" id="receipt-close">Done</button>
             </div>
         </div>`;
         document.body.appendChild(modal);
+        if (isAdmin) $('receipt-pdf').onclick = () => downloadReceiptPdf(sale);
         $('receipt-close').onclick = () => modal.remove();
         modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    }
+
+    function downloadReceiptPdf(sale) {
+        const JsPDF = window.jspdf && window.jspdf.jsPDF;
+        if (!JsPDF) {
+            Api.toast('PDF library is unavailable. Check the network connection and try again.', 'error');
+            return;
+        }
+        const doc = new JsPDF({ unit: 'mm', format: 'a4' });
+        const left = 18;
+        let y = 20;
+        const line = (text, size = 10, gap = 6) => {
+            doc.setFontSize(size);
+            const wrapped = doc.splitTextToSize(String(text || ''), 174);
+            doc.text(wrapped, left, y);
+            y += Math.max(gap, wrapped.length * 5);
+        };
+        doc.setFont('helvetica', 'bold');
+        line('MegaMart Retail', 18, 10);
+        doc.setFont('helvetica', 'normal');
+        line('123 Market Street, Johannesburg | Tel: 011 000 1234', 10, 8);
+        doc.line(left, y, 192, y); y += 8;
+        line('Receipt: ' + sale.saleNumber, 12, 7);
+        line('Date: ' + Api.dateTime(sale.saleDate), 10, 6);
+        line('Customer: ' + (sale.customerName || 'Walk-in'), 10, 6);
+        line('Payment: ' + (sale.paymentMethod || '') + ' | ' + (sale.paymentReference || ''), 10, 8);
+        sale.items.forEach(item => line(`${item.quantity} x ${item.productName}    R${Number(item.lineTotal || 0).toFixed(2)}`, 10, 6));
+        doc.line(left, y, 192, y); y += 8;
+        line('Subtotal: R' + Number(sale.subtotal || 0).toFixed(2), 10, 6);
+        if (Number(sale.discount || 0) > 0) line('Points discount: -R' + Number(sale.discount).toFixed(2), 10, 6);
+        line('VAT (15%): R' + Number(sale.tax || 0).toFixed(2), 10, 6);
+        doc.setFont('helvetica', 'bold');
+        line('TOTAL: R' + Number(sale.total || 0).toFixed(2), 12, 7);
+        doc.setFont('helvetica', 'normal');
+        line('Tendered: R' + Number(sale.amountTendered || 0).toFixed(2), 10, 6);
+        line('Change: R' + Number(sale.changeGiven || 0).toFixed(2), 10, 8);
+        line('Thank you for shopping at MegaMart!', 10, 8);
+        doc.save(`${sale.saleNumber}.pdf`);
     }
 
     /* ================= SALES HISTORY ================= */
@@ -1127,44 +1166,6 @@
                 if (isEdit) { await Api.put('/marketing/campaigns/' + camp.id, body); Api.toast('Campaign updated', 'success'); }
                 else { await Api.post('/marketing/campaigns', body); Api.toast('Campaign created', 'success'); }
                 closeModal(); navigate('campaigns');
-            });
-    }
-
-    /* ================= SOCIAL MEDIA ================= */
-    async function viewSocial(view) {
-        const [posts, camps] = await Promise.all([Api.get('/marketing/social-posts'), Api.get('/marketing/campaigns')]);
-        view.innerHTML = `<div class="page-header"><div><h2>Social Media</h2>
-            <div class="sub">Simulated integration — external APIs can connect here later</div></div>
-            <button class="btn btn-primary" id="btn-add-post">+ New Post</button></div>
-            <div class="card"><div class="card-body"><div class="table-wrap"><table class="tbl"><thead><tr>
-            <th>Platform</th><th>Content</th><th>Campaign</th><th>Status</th><th>Scheduled</th>
-            <th class="num">Likes</th><th class="num">Shares</th><th class="num">Reach</th>
-            </tr></thead><tbody>${posts.map(p => `<tr>
-            <td><span class="badge badge-blue">${Api.esc(p.platform)}</span></td><td>${Api.esc(p.content)}</td>
-            <td>${Api.esc(p.campaignName || '—')}</td>
-            <td><span class="badge ${p.status === 'PUBLISHED' ? 'badge-green' : 'badge-amber'}">${p.status}</span></td>
-            <td>${Api.dateTime(p.scheduledAt)}</td>
-            <td class="num">${p.likes}</td><td class="num">${p.shares}</td><td class="num">${p.reach}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">No posts</td></tr>'}
-            </tbody></table></div></div></div>`;
-        $('btn-add-post').onclick = () => socialPostModal(camps);
-    }
-
-    function socialPostModal(camps) {
-        modal(`
-            <div class="modal-head"><h3>Schedule Social Post</h3></div>
-            <div class="modal-body">
-                <div><label>Platform</label><select id="sp-platform">${['Facebook','Instagram','Twitter','TikTok'].map(p => `<option>${p}</option>`).join('')}</select></div>
-                <div class="mt-2"><label>Campaign</label><select id="sp-camp">${camps.map(c => `<option value="${c.id}">${Api.esc(c.name)}</option>`).join('')}</select></div>
-                <div class="mt-2"><label>Content</label><textarea id="sp-content"></textarea></div>
-                <div class="mt-2"><label>Scheduled Date/Time</label><input type="datetime-local" id="sp-when"></div>
-            </div>
-            <div class="modal-foot"><button class="btn btn-ghost" id="m-cancel">Cancel</button><button class="btn btn-primary" id="m-save">Schedule</button></div>`,
-            async () => {
-                await Api.post('/marketing/social-posts', {
-                    platform: $('sp-platform').value, campaignId: Number($('sp-camp').value),
-                    content: $('sp-content').value, scheduledAt: $('sp-when').value
-                });
-                Api.toast('Post scheduled', 'success'); closeModal(); navigate('social');
             });
     }
 
