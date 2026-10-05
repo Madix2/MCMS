@@ -1,5 +1,6 @@
 package com.redcode.mcms.exception;
 
+import jakarta.ejb.EJBException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -22,6 +23,15 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
 
     @Override
     public Response toResponse(Exception exception) {
+
+        // WildFly wraps application exceptions raised by EJBs; map the original
+        // business or authorization error instead of returning a false 500.
+        if (exception instanceof EJBException) {
+            Throwable cause = ((EJBException) exception).getCausedByException();
+            if (cause instanceof Exception && !(cause instanceof EJBException)) {
+                return toResponse((Exception) cause);
+            }
+        }
 
         if (exception instanceof NotFoundException) {
             return error(Response.Status.NOT_FOUND, exception.getMessage());

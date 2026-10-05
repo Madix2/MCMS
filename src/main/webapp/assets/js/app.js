@@ -44,6 +44,7 @@
 
     let currentRoute = 'dashboard';
     let cart = [];
+    let revenuePeriodDays = 14;
 
     const $ = (id) => document.getElementById(id);
 
@@ -173,11 +174,12 @@
 
     /* ================= DASHBOARD ================= */
     async function viewDashboard(view) {
+        const isAdmin = Api.user() && Api.user().role === 'ADMIN';
         const [summary, topProducts, invByCat, revenue, activity, notifs] = await Promise.all([
             Api.get('/dashboard/summary'),
             Api.get('/dashboard/top-products'),
             Api.get('/dashboard/inventory-by-category'),
-            Api.get('/dashboard/revenue-trend?days=14'),
+            Api.get('/dashboard/revenue-trend?days=' + revenuePeriodDays),
             Api.get('/dashboard/activity?limit=8'),
             Api.get('/dashboard/notifications?limit=6')
         ]);
@@ -196,7 +198,16 @@
             </div>
             <div class="grid grid-2">
                 <div class="card"><div class="card-body">
-                    <div class="card-title">Revenue Trend (14 days)</div>
+                    <div class="flex between" style="align-items:center;gap:12px">
+                        <div class="card-title">Revenue Trend (${revenuePeriodDays} days)</div>
+                        ${isAdmin ? `<select id="revenue-period" aria-label="Revenue trend period">
+                            <option value="7" ${revenuePeriodDays === 7 ? 'selected' : ''}>7 days</option>
+                            <option value="14" ${revenuePeriodDays === 14 ? 'selected' : ''}>14 days</option>
+                            <option value="30" ${revenuePeriodDays === 30 ? 'selected' : ''}>30 days</option>
+                            <option value="90" ${revenuePeriodDays === 90 ? 'selected' : ''}>90 days</option>
+                            <option value="365" ${revenuePeriodDays === 365 ? 'selected' : ''}>1 year</option>
+                        </select>` : ''}
+                    </div>
                     <div class="chart-box"><canvas id="ch-rev"></canvas></div>
                 </div></div>
                 <div class="card"><div class="card-body">
@@ -214,6 +225,13 @@
                     <ul class="activity-list">${activity.map(a => `<li>${Api.esc(a)}</li>`).join('') || '<li class="text-muted">No activity yet</li>'}</ul>
                 </div></div>
             </div>`;
+
+        if (isAdmin) {
+            $('revenue-period').onchange = () => {
+                revenuePeriodDays = Number($('revenue-period').value);
+                navigate('dashboard');
+            };
+        }
 
         if (window.Chart) {
             Api.registerChart(new Chart($('ch-rev'), { type: 'line', data: {

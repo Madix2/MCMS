@@ -6,6 +6,7 @@ import com.redcode.mcms.dto.NotificationDto;
 import com.redcode.mcms.entity.*;
 import com.redcode.mcms.repository.*;
 import com.redcode.mcms.security.AuthContext;
+import com.redcode.mcms.exception.BusinessException;
 import jakarta.ejb.Stateless;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
@@ -93,6 +94,12 @@ public class DashboardService {
     }
 
     public List<ChartPointDto> revenueTrend(int days) {
+        if (days != 14) {
+            authContext.requireRole(AuthContext.RolePermission.ADMIN);
+        }
+        if (days < 1 || days > 365) {
+            throw new BusinessException("Revenue trend period must be between 1 and 365 days.");
+        }
         List<ChartPointDto> result = new ArrayList<>();
         java.time.LocalDate today = java.time.LocalDate.now();
         java.util.LinkedHashMap<String, BigDecimal> byDate = new java.util.LinkedHashMap<>();
