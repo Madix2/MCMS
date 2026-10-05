@@ -18,6 +18,7 @@ import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -216,8 +217,12 @@ public class SalesService {
                 .orElseThrow(() -> new NotFoundException("Sale not found.")));
     }
 
-    public List<SaleDto> list(String search) {
-        return saleRepository.search(search).stream().map(this::toDto).collect(Collectors.toList());
+    public List<SaleDto> list(String search, LocalDate from, LocalDate to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new BusinessException("The start date cannot be after the end date.");
+        }
+        return saleRepository.search(search, from, to).stream()
+                .map(this::toDto).collect(Collectors.toList());
     }
 
     public List<SaleDto> listByCustomer(Long customerId) {

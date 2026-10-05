@@ -16,16 +16,22 @@ import java.util.List;
 public class SaleRepository extends GenericRepository<Sale, Long> {
 
     public List<Sale> search(String term) {
-        if (term == null || term.trim().isEmpty()) {
-            return findAllOrderedDesc();
-        }
-        String like = "%" + term.trim().toLowerCase() + "%";
-        return em.createQuery(
-                        "SELECT s FROM Sale s WHERE lower(s.saleNumber) LIKE :t"
-                                + " OR lower(s.customer.fullName) LIKE :t ORDER BY s.saleDate DESC",
-                        Sale.class)
-                .setParameter("t", like)
-                .getResultList();
+        return search(term, null, null);
+    }
+
+    public List<Sale> search(String term, LocalDate from, LocalDate to) {
+        StringBuilder jpql = new StringBuilder("SELECT s FROM Sale s WHERE 1 = 1");
+        boolean hasTerm = term != null && !term.trim().isEmpty();
+        if (hasTerm) jpql.append(" AND (lower(s.saleNumber) LIKE :t OR lower(s.customer.fullName) LIKE :t)");
+        if (from != null) jpql.append(" AND s.saleDate >= :from");
+        if (to != null) jpql.append(" AND s.saleDate < :to");
+        jpql.append(" ORDER BY s.saleDate DESC");
+
+        var query = em.createQuery(jpql.toString(), Sale.class);
+        if (hasTerm) query.setParameter("t", "%" + term.trim().toLowerCase() + "%");
+        if (from != null) query.setParameter("from", from.atStartOfDay());
+        if (to != null) query.setParameter("to", to.plusDays(1).atStartOfDay());
+        return query.getResultList();
     }
 
     public List<Sale> findAllOrderedDesc() {

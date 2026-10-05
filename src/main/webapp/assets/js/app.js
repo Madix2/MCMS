@@ -471,12 +471,24 @@
     }
 
     function downloadReceiptPdf(sale) {
+        downloadSalesPdf([sale]);
+    }
+
+    function downloadSalesPdf(sales) {
         const JsPDF = window.jspdf && window.jspdf.jsPDF;
         if (!JsPDF) {
             Api.toast('PDF library is unavailable. Check the network connection and try again.', 'error');
             return;
         }
         const doc = new JsPDF({ unit: 'mm', format: 'a4' });
+        sales.forEach((sale, index) => {
+            if (index > 0) doc.addPage();
+            drawReceiptPage(doc, sale);
+        });
+        doc.save(sales.length === 1 ? `${sales[0].saleNumber}.pdf` : `megamart-sales-${Api.today()}.pdf`);
+    }
+
+    function drawReceiptPage(doc, sale) {
         const left = 18;
         let y = 20;
         const line = (text, size = 10, gap = 6) => {
@@ -505,19 +517,27 @@
         line('Tendered: R' + Number(sale.amountTendered || 0).toFixed(2), 10, 6);
         line('Change: R' + Number(sale.changeGiven || 0).toFixed(2), 10, 8);
         line('Thank you for shopping at MegaMart!', 10, 8);
-        doc.save(`${sale.saleNumber}.pdf`);
     }
 
     /* ================= SALES HISTORY ================= */
     async function viewSales(view) {
+        const isAdmin = Api.user() && Api.user().role === 'ADMIN';
         view.innerHTML = `<div class="page-header"><div><h2>Sales History</h2></div>
-            <div class="toolbar"><input type="text" id="sales-search" placeholder="Search by number or customer..."></div></div>
+            <div class="toolbar"><input type="text" id="sales-search" placeholder="Search by number or customer...">
+            <label>From <input type="date" id="sales-from"></label><label>To <input type="date" id="sales-to"></label>
+            <button class="btn btn-outline" id="sales-clear">Clear</button>
+            ${isAdmin ? '<button class="btn btn-primary" id="sales-pdf">Download Filtered PDF</button>' : ''}</div></div>
             <div class="card"><div class="card-body"><div class="table-wrap"><table class="tbl"><thead><tr>
             <th>Sale #</th><th>Date</th><th>Customer</th><th class="num">Items</th><th class="num">Total</th><th>Payment</th><th>Status</th><th></th>
             </tr></thead><tbody id="sales-tbody"></tbody></table></div></div></div>
             <div id="receipt-modal"></div>`;
+        let currentSales = [];
         const load = async (term) => {
-            const sales = await Api.get('/sales?q=' + (term || ''));
+            const params = new URLSearchParams({ q: term || '' });
+            if ($('sales-from').value) params.set('from', $('sales-from').value);
+            if ($('sales-to').value) params.set('to', $('sales-to').value);
+            const sales = await Api.get('/sales?' + params.toString());
+            currentSales = sales;
             const tbody = $('sales-tbody');
             tbody.innerHTML = sales.map(s => `<tr>
                 <td><strong>${Api.esc(s.saleNumber)}</strong></td>
@@ -536,6 +556,13 @@
         };
         load();
         $('sales-search').addEventListener('input', (e) => { clearTimeout(renderTimer); renderTimer = setTimeout(() => load(e.target.value), 350); });
+        $('sales-from').addEventListener('change', () => load($('sales-search').value));
+        $('sales-to').addEventListener('change', () => load($('sales-search').value));
+        $('sales-clear').onclick = () => { $('sales-search').value = ''; $('sales-from').value = ''; $('sales-to').value = ''; load(''); };
+        if (isAdmin) $('sales-pdf').onclick = () => {
+            if (!currentSales.length) { Api.toast('There are no receipts in the current filter.', 'error'); return; }
+            downloadSalesPdf(currentSales);
+        };
     }
 
     /* ================= PRODUCTS ================= */

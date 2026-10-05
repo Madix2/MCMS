@@ -11,6 +11,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
+import java.time.LocalDate;
 
 /**
  * Sales REST API.
@@ -29,8 +30,17 @@ public class SalesResource {
     private SalesService salesService;
 
     @GET
-    public List<SaleDto> list(@QueryParam("q") String q) {
-        return salesService.list(q);
+    public List<SaleDto> list(@QueryParam("q") String q, @QueryParam("from") String from,
+                              @QueryParam("to") String to) {
+        try {
+            return salesService.list(q, parseDate(from), parseDate(to));
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new com.redcode.mcms.exception.BusinessException("Dates must use YYYY-MM-DD format.");
+        }
+    }
+
+    private LocalDate parseDate(String value) {
+        return value == null || value.isBlank() ? null : LocalDate.parse(value);
     }
 
     @GET
