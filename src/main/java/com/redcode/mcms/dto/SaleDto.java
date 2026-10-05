@@ -20,6 +20,8 @@ public class SaleDto {
     private BigDecimal discount = BigDecimal.ZERO;
     private BigDecimal total;
     private String paymentMethod;
+    private String paymentReference;
+    private String paymentStatus;
     private BigDecimal amountTendered;
     private BigDecimal changeGiven;
     private String status;
@@ -67,6 +69,10 @@ public class SaleDto {
     public void setTotal(BigDecimal total) { this.total = total; }
     public String getPaymentMethod() { return paymentMethod; }
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    public String getPaymentReference() { return paymentReference; }
+    public void setPaymentReference(String paymentReference) { this.paymentReference = paymentReference; }
+    public String getPaymentStatus() { return paymentStatus; }
+    public void setPaymentStatus(String paymentStatus) { this.paymentStatus = paymentStatus; }
     public BigDecimal getAmountTendered() { return amountTendered; }
     public void setAmountTendered(BigDecimal amountTendered) { this.amountTendered = amountTendered; }
     public BigDecimal getChangeGiven() { return changeGiven; }

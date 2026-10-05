@@ -60,6 +60,12 @@ public class SalesService {
     private AuditService auditService;
 
     @Inject
+    private EmailJsService emailJsService;
+
+    @Inject
+    private FakePaymentService fakePaymentService;
+
+    @Inject
     private AuthContext authContext;
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
@@ -132,6 +138,13 @@ public class SalesService {
         BigDecimal tax = taxableBase.multiply(new BigDecimal("0.15")).setScale(2, RoundingMode.HALF_UP);
         BigDecimal total = taxableBase.add(tax).setScale(2, RoundingMode.HALF_UP);
 
+        if (request.getAmountTendered().compareTo(total) < 0) {
+            throw new BusinessException("Amount tendered is less than the sale total.");
+        }
+
+        FakePaymentService.PaymentResult paymentResult = fakePaymentService.authorize(
+                method.name(), total, request.getAmountTendered(), request.getPaymentScenario());
+
         sale.setSubtotal(subtotal.setScale(2, RoundingMode.HALF_UP));
         sale.setDiscount(discount);
         sale.setTax(tax);
@@ -148,7 +161,7 @@ public class SalesService {
         payment.setSale(saved);
         payment.setMethod(method);
         payment.setAmount(total);
-        payment.setReference("PAY-" + saved.getSaleNumber());
+        payment.setReference(paymentResult.reference());
         saved.setPayment(payment);
 
         // Step 6: loyalty points - R10 spent = 1 point awarded on the amount paid
@@ -173,6 +186,15 @@ public class SalesService {
         }
         auditService.log("CREATE_SALE", "Sale", saved.getId(),
                 "Sale " + saved.getSaleNumber() + " completed");
+
+        if (customer != null && customer.getEmail() != null && !customer.getEmail().isBlank()) {
+            String items = saved.getItems().stream()
+                    .map(i -> i.getProduct().getName() + " x" + i.getQuantity() + " - R" + i.getLineTotal())
+                    .collect(Collectors.joining("\n"));
+            emailJsService.sendReceipt(customer.getEmail(), saved.getSaleNumber(),
+                    customer.getFullName(), items, saved.getTotal().toString(),
+                    method.name(), saved.getSaleDate().toString());
+        }
 
         return toDto(saved);
     }
@@ -225,6 +247,8 @@ public class SalesService {
         }
         if (s.getPayment() != null) {
             dto.setPaymentMethod(s.getPayment().getMethod().name());
+            dto.setPaymentReference(s.getPayment().getReference());
+            dto.setPaymentStatus("APPROVED");
         }
         for (SaleItem item : s.getItems()) {
             SaleDto.SaleItemDto idto = new SaleDto.SaleItemDto();

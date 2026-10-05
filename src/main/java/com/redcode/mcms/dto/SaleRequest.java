@@ -27,6 +27,9 @@ public class SaleRequest {
     @DecimalMin(value = "0.0", inclusive = true, message = "Amount tendered cannot be negative.")
     private BigDecimal amountTendered;
 
+    /** Simulation-only gateway scenario used for demonstrations and testing. */
+    private String paymentScenario = "SUCCESS";
+
     /** Whether the (registered) customer wants to redeem loyalty points on this sale. */
     private boolean usePoints;
 
@@ -51,6 +54,8 @@ public class SaleRequest {
     public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
     public BigDecimal getAmountTendered() { return amountTendered; }
     public void setAmountTendered(BigDecimal amountTendered) { this.amountTendered = amountTendered; }
+    public String getPaymentScenario() { return paymentScenario; }
+    public void setPaymentScenario(String paymentScenario) { this.paymentScenario = paymentScenario; }
     public boolean isUsePoints() { return usePoints; }
     public void setUsePoints(boolean usePoints) { this.usePoints = usePoints; }
 }

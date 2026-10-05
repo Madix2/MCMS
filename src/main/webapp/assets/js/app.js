@@ -277,6 +277,14 @@
                         <select id="pos-pay-method"><option value="CASH">Cash</option><option value="CARD">Card</option><option value="EFT">EFT</option><option value="DIGITAL">Digital</option></select>
                         <input type="number" id="pos-tendered" placeholder="Amount tendered" min="0" step="0.01">
                     </div>
+                    <label class="text-muted" for="pos-payment-scenario">Fake payment scenario</label>
+                    <select id="pos-payment-scenario">
+                        <option value="SUCCESS">Approved</option>
+                        <option value="DECLINED_INSUFFICIENT_FUNDS">Declined - insufficient funds</option>
+                        <option value="DECLINED_EXPIRED_CARD">Declined - expired card</option>
+                        <option value="DECLINED_NETWORK">Declined - network error</option>
+                    </select>
+                    <div class="text-muted mt-1">Demo only: no real payment is processed.</div>
                     <button class="btn btn-primary btn-block mt-2" id="pos-checkout">Complete Sale</button>
                 </div></div>
             </div>
@@ -394,6 +402,7 @@
             items: cart.map(l => ({ productId: l.productId, quantity: l.quantity })),
             paymentMethod: $('pos-pay-method').value,
             amountTendered: tendered,
+            paymentScenario: $('pos-payment-scenario').value,
             usePoints: registered && $('pos-use-points').checked
         };
         $('pos-checkout').disabled = true;
@@ -423,7 +432,7 @@
                 <div class="center">123 Market Street, Johannesburg<br>Tel: 011 000 1234</div>
                 <div class="line"></div>
                 <div class="center"><strong>${sale.saleNumber}</strong></div>
-                <div class="center">${Api.dateTime(sale.saleDate)}<br>${sale.paymentMethod || ''} · customer: ${Api.esc(sale.customerName || 'Walk-in')}</div>
+                    <div class="center">${Api.dateTime(sale.saleDate)}<br>${sale.paymentMethod || ''} · ${Api.esc(sale.paymentReference || '')}<br>customer: ${Api.esc(sale.customerName || 'Walk-in')}</div>
                 <table>${rows}
                     <tr><td>Subtotal</td><td class="num">${money(sale.subtotal)}</td></tr>
                     ${sale.discount && Number(sale.discount) > 0 ? `<tr><td>Points discount</td><td class="num">−${money(sale.discount)}</td></tr>` : ''}
@@ -1155,7 +1164,11 @@
         $('rep-name').innerHTML = names.map(n => `<option>${n}</option>`).join('');
         const run = async (format) => {
             const name = $('rep-name').value, from = $('rep-from').value, to = $('rep-to').value;
-            if (format === 'csv') { window.open(`/mcms/api/reports?name=${name}&from=${from}&to=${to}&format=csv`, '_blank'); return; }
+            if (format === 'csv') {
+                const query = `?name=${encodeURIComponent(name)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&format=csv`;
+                await Api.download(`/reports${query}`, `${name}-report.csv`);
+                return;
+            }
             const rep = await Api.get(`/reports?name=${name}&from=${from}&to=${to}`);
             let html = `<thead><tr>${rep.columns.map(c => `<th>${Api.esc(c)}</th>`).join('')}</tr></thead><tbody>`;
             html += rep.rows.map(r => `<tr>${r.map(c => `<td>${Api.esc(c)}</td>`).join('')}</tr>`).join('');
@@ -1166,8 +1179,6 @@
         $('rep-csv').onclick = () => run('csv');
         run('json');
     }
-    // note: CSV uses query params (no auth header) -> download via token not carried; acceptable for demo
-
     /* ================= AUDIT LOGS ================= */
     async function viewAudit(view) {
         const logs = await Api.get('/audit?limit=200');

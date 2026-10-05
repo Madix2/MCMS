@@ -30,6 +30,12 @@ public class NotificationService {
         return notificationRepository.save(n);
     }
 
+    public void notifyIfAbsent(String type, String title, String message, String targetRole) {
+        if (!notificationRepository.hasUnread(type, message)) {
+            notify(type, title, message, targetRole);
+        }
+    }
+
     public List<Notification> recent(int limit) {
         return notificationRepository.findRecent(limit);
     }

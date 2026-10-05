@@ -2,6 +2,8 @@
 const Api = (() => {
     const TOKEN_KEY = 'mcms_token';
     const USER_KEY = 'mcms_user';
+    // Resolve relative to the deployed WAR so custom context roots work.
+    const API_BASE = 'api';
 
     let charts = [];
 
@@ -27,7 +29,7 @@ const Api = (() => {
         if (t) headers['Authorization'] = 'Bearer ' + t;
         if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-        const res = await fetch('/mcms/api' + path, {
+        const res = await fetch(API_BASE + path, {
             method: method,
             headers: headers,
             body: body !== undefined ? JSON.stringify(body) : undefined
@@ -53,6 +55,27 @@ const Api = (() => {
             throw err;
         }
         return data;
+    }
+
+    async function download(path, filename) {
+        const headers = {};
+        const t = token();
+        if (t) headers['Authorization'] = 'Bearer ' + t;
+        const res = await fetch(API_BASE + path, { headers });
+        if (res.status === 401) {
+            logout();
+            throw new Error('Session expired. Please log in again.');
+        }
+        if (!res.ok) throw new Error('Download failed (' + res.status + ')');
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
     }
 
     const get = (path) => request('GET', path);
@@ -110,6 +133,6 @@ const Api = (() => {
         return new Date().toISOString().slice(0, 10);
     }
 
-    return { token, user, setSession, clearSession, get, post, put, del, logout,
+    return { token, user, setSession, clearSession, get, post, put, del, download, logout,
         toast, resetCharts, registerChart, money, moneyShort, esc, dateTime, today };
 })();

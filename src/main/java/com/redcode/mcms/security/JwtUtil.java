@@ -11,8 +11,8 @@ import java.util.Map;
  * Minimal dependency-free JWT (JSON Web Token) implementation.
  *
  * The token carries the user id, username and role, and is signed with
- * HMAC-SHA256 using a secret configured via the environment variable
- * {@code MCMS_JWT_SECRET} (a random fallback is used if not set).
+ * HMAC-SHA256 using a secret configured via {@code MCMS_JWT_SECRET}.
+ * Development may use the fallback, but production must provide a strong secret.
  *
  * Keeping this dependency-free makes the application portable across
  * application servers without extra libraries.
@@ -21,6 +21,7 @@ import java.util.Map;
 public class JwtUtil {
 
     public static final String SECRET_ENV = "MCMS_JWT_SECRET";
+    private static final String ENVIRONMENT_ENV = "MCMS_ENV";
     private static final String FALLBACK_SECRET = "mcms-default-dev-secret-change-in-production-2026";
     private static final long EXPIRY_MILLIS = 1000L * 60L * 60L * 8L; // 8 hours
 
@@ -29,7 +30,15 @@ public class JwtUtil {
     private String resolveSecret() {
         if (secret == null) {
             String fromEnv = System.getenv(SECRET_ENV);
+            if (fromEnv == null || fromEnv.isBlank()) fromEnv = System.getProperty(SECRET_ENV);
+            if ((fromEnv == null || fromEnv.isBlank())
+                    && "production".equalsIgnoreCase(System.getenv(ENVIRONMENT_ENV))) {
+                throw new IllegalStateException(SECRET_ENV + " must be configured in production.");
+            }
             secret = (fromEnv == null || fromEnv.isBlank()) ? FALLBACK_SECRET : fromEnv;
+            if (secret.length() < 32) {
+                throw new IllegalStateException(SECRET_ENV + " must contain at least 32 characters.");
+            }
         }
         return secret;
     }
@@ -38,8 +47,8 @@ public class JwtUtil {
         long now = System.currentTimeMillis();
         String header = b64("{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
         String payload = b64("{\"sub\":" + userId
-                + ",\"user\":\"" + username
-                + "\",\"role\":\"" + role
+                + ",\"user\":\"" + jsonEscape(username)
+                + "\",\"role\":\"" + jsonEscape(role)
                 + "\",\"iat\":" + now
                 + ",\"exp\":" + (now + EXPIRY_MILLIS) + "}");
         String signature = sign(header + "." + payload);
@@ -124,5 +133,9 @@ public class JwtUtil {
         int start = idx + token.length();
         int end = json.indexOf('"', start);
         return json.substring(start, end < 0 ? json.length() : end);
+    }
+
+    private String jsonEscape(String value) {
+        return value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 }

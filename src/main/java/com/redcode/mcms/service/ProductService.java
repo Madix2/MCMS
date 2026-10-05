@@ -134,7 +134,9 @@ public class ProductService {
         product.setQuantity(product.getQuantity() - quantity);
         productRepository.update(product);
         recordMovement(product, MovementType.SALE, -quantity, reference, "Sale deduction");
-        return product.isLowStock();
+        boolean lowStock = product.isLowStock();
+        if (lowStock) checkLowStock(product);
+        return lowStock;
     }
 
     /** Used by purchase-order receiving: adds received quantity to stock. */
@@ -151,7 +153,7 @@ public class ProductService {
      */
     public void checkLowStock(Product product) {
         if (product.isLowStock()) {
-            notificationService.notify("LOW_STOCK", "LOW STOCK",
+            notificationService.notifyIfAbsent("LOW_STOCK", "LOW STOCK",
                     product.getName() + " has reached its minimum stock level. Current: "
                             + product.getQuantity() + ", Minimum: " + product.getMinStockLevel() + ".",
                     "PROCUREMENT");

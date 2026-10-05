@@ -34,4 +34,12 @@ public class NotificationRepository extends GenericRepository<Notification, Long
         return em.createQuery("SELECT COUNT(n) FROM Notification n WHERE n.read = false", Long.class)
                 .getSingleResult();
     }
+
+    public boolean hasUnread(String type, String message) {
+        return em.createQuery("SELECT COUNT(n) FROM Notification n WHERE n.read = false "
+                        + "AND n.type = :type AND n.message = :message", Long.class)
+                .setParameter("type", type)
+                .setParameter("message", message)
+                .getSingleResult() > 0;
+    }
 }

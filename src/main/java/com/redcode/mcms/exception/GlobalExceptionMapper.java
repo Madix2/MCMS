@@ -35,6 +35,9 @@ public class GlobalExceptionMapper implements ExceptionMapper<Exception> {
         if (exception instanceof ForbiddenException) {
             return error(Response.Status.FORBIDDEN, exception.getMessage());
         }
+        if (exception instanceof PaymentDeclinedException) {
+            return error(Response.Status.PAYMENT_REQUIRED, exception.getMessage());
+        }
         if (exception instanceof ConstraintViolationException) {
             ConstraintViolationException cve = (ConstraintViolationException) exception;
             StringBuilder sb = new StringBuilder();

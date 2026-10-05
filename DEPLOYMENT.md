@@ -101,13 +101,27 @@ console / CLI. On first boot the schema is created and demo data is seeded.
 
 Browse to **`http://localhost:8080/mcms/`**.
 
-### JWT secret (optional but recommended)
+The frontend resolves API requests relative to the deployed WAR, so it also works
+when the application is deployed under a different context root. A liveness check
+is available without authentication at `GET /mcms/api/health`; database readiness
+is checked by `GET /mcms/api/health/ready`.
 
-The JWT is signed with the env var `MCMS_JWT_SECRET` (falls back to a dev
-secret if unset). Set it in the server environment for production:
+### JWT secret (required in production)
+
+The JWT is signed with the env var `MCMS_JWT_SECRET`. Development falls back to a
+dev secret, but production rejects missing secrets and secrets shorter than 32
+characters:
 
 ```powershell
 $env:MCMS_JWT_SECRET = "a-long-random-secret-value"
+$env:MCMS_ENV = "production"
+
+# EmailJS receipt configuration (set on the application server)
+$env:MCMS_EMAILJS_SERVICE_ID = "service_7t7hs2g"
+$env:MCMS_EMAILJS_TEMPLATE_ID = "template_j5sulv5"
+$env:MCMS_EMAILJS_PUBLIC_KEY = "your-emailjs-public-key"
+# Optional: keep the EmailJS private key server-side only.
+$env:MCMS_EMAILJS_PRIVATE_KEY = "your-emailjs-private-key"
 ```
 
 ---
@@ -175,6 +189,7 @@ Invoke-RestMethod -Method Get -Uri "http://localhost:8080/mcms/api/dashboard/sum
 | Area | Path | Notes |
 |------|------|-------|
 | Auth | `POST /auth/login`, `POST /auth/change-password` | login public |
+| Health | `GET /health`, `/health/ready` | Public liveness and database readiness checks |
 | Dashboard | `GET /dashboard/summary`, `/top-products`, `/inventory-by-category`, `/revenue-trend`, `/activity`, `/notifications` | |
 | Products | `GET/POST /products`, `PUT/DELETE /products/{id}`, `GET /products/low-stock`, `GET /products/{id}/movements`, `POST /products/{id}/adjust` | |
 | Sales | `GET/POST /sales`, `GET /sales/{id}` | POST completes sale transactionally |
@@ -189,3 +204,10 @@ Invoke-RestMethod -Method Get -Uri "http://localhost:8080/mcms/api/dashboard/sum
 Fine-grained role protection is enforced in the service layer via
 `AuthContext.requireRole(...)`; `ADMIN` always passes. The `SecurityFilter`
 enforces authentication only (401 for missing/invalid token).
+
+### Fake payment scenarios
+
+POS supports demonstration-only payment outcomes through `paymentScenario`:
+`SUCCESS`, `DECLINED_INSUFFICIENT_FUNDS`, `DECLINED_EXPIRED_CARD`, and
+`DECLINED_NETWORK`. A declined payment returns HTTP 402 and rolls back the sale
+and inventory changes. No real payment provider is contacted.
