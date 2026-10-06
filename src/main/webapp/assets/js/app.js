@@ -22,7 +22,6 @@
         { key: 'customers', label: 'Customers', icon: '👤', roles: ['ADMIN','MANAGER','SALES','MARKETING'] },
         { label: 'Human Resources', icon: '🧑‍💼', group: true, roles: ['ADMIN','MANAGER','HR'] },
         { key: 'employees', label: 'Employees', icon: '🧑‍💼', roles: ['ADMIN','MANAGER','HR'] },
-        { key: 'attendance', label: 'Attendance', icon: '🕐', roles: ['ADMIN','MANAGER','HR'] },
         { label: 'Marketing', icon: '📣', group: true, roles: ['ADMIN','MANAGER','MARKETING'] },
         { key: 'promotions', label: 'Promotions', icon: '🎉', roles: ['ADMIN','MANAGER','MARKETING'] },
         { key: 'campaigns', label: 'Campaigns', icon: '📣', roles: ['ADMIN','MANAGER','MARKETING'] },
@@ -36,7 +35,7 @@
         'products': 'Products', 'low-stock': 'Low Stock', 'movements': 'Stock Movements',
         'suppliers': 'Suppliers', 'purchase-orders': 'Purchase Orders', 'approvals': 'Purchase Order Approvals',
         'finance': 'Finance Dashboard', 'customers': 'Customers',
-        'employees': 'Employees', 'attendance': 'Attendance',
+        'employees': 'Employees',
         'promotions': 'Promotions', 'campaigns': 'Campaigns',
         'reports': 'Reports', 'audit': 'Audit Logs', 'settings': 'Settings'
     };
@@ -160,7 +159,6 @@
             case 'finance': load(() => viewFinance(view)); break;
             case 'customers': load(() => viewCustomers(view)); break;
             case 'employees': load(() => viewEmployees(view)); break;
-            case 'attendance': load(() => viewAttendance(view)); break;
             case 'promotions': load(() => viewPromotions(view)); break;
             case 'campaigns': load(() => viewCampaigns(view)); break;
             case 'reports': load(() => viewReports(view)); break;
@@ -1052,51 +1050,6 @@
                 if (isEdit) { await Api.put('/hr/employees/' + emp.id, body); Api.toast('Employee updated', 'success'); }
                 else { await Api.post('/hr/employees', body); Api.toast('Employee added (login: username@domain / Password@123)', 'success'); }
                 closeModal(); navigate(currentRoute);
-            });
-    }
-
-    /* ================= ATTENDANCE ================= */
-    async function viewAttendance(view) {
-        const [emps, today] = await Promise.all([Api.get('/hr/employees?q='), Promise.resolve(Api.today())]);
-        view.innerHTML = `<div class="page-header"><div><h2>Attendance</h2></div>
-            <div class="toolbar"><input type="date" id="att-date" value="${today}">
-            <button class="btn btn-primary" id="btn-add-att">+ Record / Update</button></div></div>
-            <div class="card"><div class="card-body"><div class="table-wrap"><table class="tbl"><thead><tr>
-            <th>Employee</th><th>Date</th><th>Clock In</th><th>Clock Out</th><th>Present</th><th>Notes</th>
-            </tr></thead><tbody id="att-tbody"></tbody></table></div></div></div>`;
-        const load = async () => {
-            const date = $('att-date').value;
-            const list = await Api.get('/hr/attendance?date=' + date);
-            $('att-tbody').innerHTML = list.map(a => `<tr>
-                <td><strong>${Api.esc(a.employeeName)}</strong></td><td>${a.date}</td><td>${Api.esc(a.clockIn || '—')}</td>
-                <td>${Api.esc(a.clockOut || '—')}</td>
-                <td><span class="badge ${a.present ? 'badge-green' : 'badge-red'}">${a.present ? 'PRESENT' : 'ABSENT'}</span></td>
-                <td>${Api.esc(a.notes || '')}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">No attendance for this date</td></tr>';
-        };
-        load();
-        $('att-date').addEventListener('change', load);
-        $('btn-add-att').onclick = () => attendanceModal(emps);
-    }
-
-    function attendanceModal(emps) {
-        modal(`
-            <div class="modal-head"><h3>Record Attendance</h3></div>
-            <div class="modal-body">
-                <div><label>Employee</label><select id="a-emp">${emps.map(e => `<option value="${e.id}">${Api.esc(e.fullName)}</option>`).join('')}</select></div>
-                <div class="grid grid-3 mt-2">
-                    <div><label>Clock In</label><input type="time" id="a-in" value="08:00"></div>
-                    <div><label>Clock Out</label><input type="time" id="a-out" value="17:00"></div>
-                    <div><label class="flex" style="gap:6px"><input type="checkbox" id="a-present" style="width:auto" checked> Present</label></div>
-                </div>
-                <div class="mt-2"><label>Notes</label><input id="a-notes"></div>
-            </div>
-            <div class="modal-foot"><button class="btn btn-ghost" id="m-cancel">Cancel</button><button class="btn btn-primary" id="m-save">Save</button></div>`,
-            async () => {
-                await Api.post('/hr/attendance', {
-                    employeeId: Number($('a-emp').value), date: $('att-date').value,
-                    clockIn: $('a-in').value, clockOut: $('a-out').value, present: $('a-present').checked, notes: $('a-notes').value
-                });
-                Api.toast('Attendance recorded', 'success'); closeModal(); navigate('attendance');
             });
     }
 
