@@ -1,0 +1,160 @@
+MEGAMART CENTRAL MANAGEMENT SYSTEM
+Tools Used and Lessons Learned
+APD Group Project
+
+1. PROJECT OVERVIEW
+
+MCMS is a browser-based Central Management System for supermarket operations.
+It connects Sales/POS, Inventory, Purchasing, Finance, Customers, Human
+Resources, Marketing, Reports, Notifications, and Audit Logs through one
+central application and PostgreSQL database.
+
+2. JAKARTA TECHNOLOGIES USED
+
+Jakarta EE 10 is the main enterprise application platform used by MCMS.
+
+Jakarta RESTful Web Services (JAX-RS)
+- Provides the REST API used by the browser frontend.
+- Resources expose endpoints such as /api/products, /api/sales, and
+  /api/dashboard.
+- Handles HTTP methods including GET, POST, PUT, and DELETE.
+
+Jakarta Persistence (JPA 3.0)
+- Maps Java entity classes to PostgreSQL database tables.
+- Used for Product, Sale, SaleItem, Customer, Employee, Promotion,
+  PurchaseOrder, Payment, Notification, and AuditLog entities.
+- Uses repositories and JPQL queries for database access.
+
+Jakarta Enterprise Beans (EJB)
+- Provides stateless service and repository components.
+- Manages business operations and container-managed transactions.
+- Used for sales processing, inventory updates, purchasing, reporting,
+  authentication, and scheduled low-stock checks.
+
+Jakarta Contexts and Dependency Injection (CDI)
+- Injects services, repositories, security context, and supporting components.
+- Reduces direct coupling between application layers.
+
+Jakarta Transactions (JTA)
+- Makes the POS checkout process atomic.
+- Sale creation, payment recording, inventory deduction, stock movements,
+  and loyalty updates succeed or roll back together.
+- Prevents a sale from being saved without the related stock update.
+
+Jakarta Bean Validation
+- Validates request data such as product names, prices, quantities, emails,
+  passwords, payment methods, and sale items.
+- Returns consistent validation errors through the global exception mapper.
+
+Jakarta Servlet/Web Application Configuration
+- Uses web.xml for web application metadata, the welcome page, session
+  configuration, and cookie settings.
+
+Jakarta EJB Timer Service
+- Runs the scheduled low-stock reconciliation job.
+- Helps detect low stock after imports or other external updates.
+
+Note: authentication is implemented with a custom HMAC-SHA256 JWT utility and
+security filter. It is not an implementation of the Jakarta Security API.
+
+3. BACKEND AND DATABASE TOOLS
+
+- Java 17: application programming language and runtime.
+- Maven: dependency management, compilation, testing, and WAR packaging.
+- PostgreSQL 14: relational database used by the application.
+- WildFly: Jakarta EE application server used on the Oracle VM.
+- Nginx: web server and reverse proxy for the public domain.
+- EmailJS: simulated transactional receipt email integration.
+- jsPDF: browser-side Admin receipt PDF generation.
+
+4. FRONTEND TOOLS
+
+- HTML5: page structure and application shell.
+- CSS3: responsive layout and visual styling.
+- JavaScript: single-page application behavior and API integration.
+- Fetch API: browser-to-REST API communication.
+- Chart.js: dashboard revenue and inventory charts.
+- jsPDF: receipt and multi-receipt PDF downloads.
+
+5. DEVELOPMENT AND DEPLOYMENT TOOLS
+
+- Git: source control and change history.
+- GitHub: remote source repository and collaboration.
+- Oracle Cloud Infrastructure Compute: hosting platform.
+- Ubuntu 22.04 ARM64: operating system on the virtual machine.
+- SSH: secure administration and deployment access.
+- DuckDNS: public DNS name for the application.
+- PowerShell and Linux shell: local and server administration.
+
+6. IMPORTANT FEATURES IMPLEMENTED
+
+- Role-based access for Administrator, Manager, Sales, Inventory,
+  Procurement, Finance, HR, and Marketing users.
+- Transaction-safe POS sales with inventory deduction.
+- Deterministic fake payment scenarios for demonstrations:
+  approved, insufficient funds, expired card, and network decline.
+- Active promotions linked to real inventory products and applied in POS.
+- Low-stock notifications and scheduled low-stock reconciliation.
+- Admin-adjustable revenue trend periods.
+- Sales History search and date-range filtering.
+- Admin multi-receipt PDF export with one receipt per page.
+- Authenticated CSV report downloads.
+- Audit logs for important business actions.
+- Application liveness and database readiness endpoints.
+
+7. POSSIBLE LESSONS LEARNED
+
+Jakarta EE architecture
+- Enterprise applications are easier to maintain when REST resources,
+  services, repositories, entities, and DTOs have clear responsibilities.
+- CDI and EJB injection reduces manual object creation and improves testability.
+
+Transactions and data consistency
+- A POS sale is not only a payment action. It also changes inventory,
+  stock movements, loyalty points, notifications, and audit history.
+- JTA transactions are important when several related operations must either
+  all succeed or all fail.
+
+Database design
+- Relationships between products, promotions, sale items, suppliers, and
+  categories must use real entity references instead of duplicated text.
+- Date filtering and reporting require clear date boundaries, especially for
+  end dates and time zones.
+
+Security
+- Passwords must be hashed and never stored as plain text.
+- JWT secrets must be strong and configured outside the source code.
+- Private API keys must never be placed in browser JavaScript or Git.
+- Roles must be enforced on the server, not only hidden in the frontend.
+
+Frontend and backend integration
+- Frontend validation improves user experience, but backend validation is
+  still required because API requests can be sent directly.
+- Consistent JSON errors make it easier for the frontend to show useful
+  messages to users.
+
+Deployment
+- A project that works locally still needs database, datasource, application
+  server, firewall, DNS, reverse proxy, and environment configuration.
+- Health and readiness endpoints help confirm whether the application and its
+  database are working on a remote VM.
+- Git push/pull and repeatable WAR builds make deployment safer and easier to
+  reproduce.
+
+Group collaboration
+- Teams should agree on naming conventions, API contracts, database ownership,
+  and Git workflow before implementing separate modules.
+- Small commits with clear messages make it easier to review and merge work.
+- Testing each module through the full workflow exposes integration problems
+  that unit testing one module alone may not reveal.
+
+8. FUTURE IMPROVEMENTS
+
+- Add automated unit, integration, and end-to-end tests.
+- Add PostgreSQL backup and restore automation.
+- Add HTTPS with a trusted certificate.
+- Add sales returns, refunds, and payment reversals.
+- Add multi-branch inventory and reporting.
+- Add real email low-stock alerts and configurable SMTP/EmailJS settings.
+- Replace automatic schema updates with versioned database migrations.
+- Add pagination for large sales, product, and audit tables.
