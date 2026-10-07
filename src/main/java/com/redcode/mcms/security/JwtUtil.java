@@ -84,6 +84,7 @@ public class JwtUtil {
             claims.put("sub", Long.toString(extractNumber(payloadJson, "sub")));
             claims.put("user", extractString(payloadJson, "user"));
             claims.put("role", extractString(payloadJson, "role"));
+            claims.put("exp", Long.toString(exp));
             String supplierId = extractOptionalNumber(payloadJson, "supplierId");
             if (supplierId != null) claims.put("supplierId", supplierId);
             return claims;

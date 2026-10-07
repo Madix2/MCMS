@@ -36,6 +36,7 @@ END $$;
 ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS delta_diff JSONB;
 ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);
 ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS client_token_id VARCHAR(255);
+CREATE INDEX IF NOT EXISTS idx_audit_log_delta_diff_gin ON audit_log USING GIN (delta_diff);
 
 ALTER TABLE app_user ADD COLUMN IF NOT EXISTS supplier_id BIGINT;
 DO $$

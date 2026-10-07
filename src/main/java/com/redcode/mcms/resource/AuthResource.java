@@ -3,6 +3,8 @@ package com.redcode.mcms.resource;
 import com.redcode.mcms.dto.LoginRequest;
 import com.redcode.mcms.dto.LoginResponse;
 import com.redcode.mcms.security.Secured;
+import com.redcode.mcms.security.JwtUtil;
+import com.redcode.mcms.security.TokenRevocationService;
 import com.redcode.mcms.service.AuthService;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -21,6 +23,9 @@ public class AuthResource {
     @Inject
     private AuthService authService;
 
+    @Inject private JwtUtil jwtUtil;
+    @Inject private TokenRevocationService tokenRevocationService;
+
     @POST
     @Path("/login")
     public Response login(@Valid LoginRequest request) {
@@ -35,5 +40,16 @@ public class AuthResource {
         String newPassword = body != null ? body.get("newPassword") : null;
         authService.changePassword(newPassword);
         return Response.ok(java.util.Map.of("message", "Password updated.")).build();
+    }
+
+    @Secured
+    @POST
+    @Path("/logout")
+    public Response logout(@HeaderParam("Authorization") String authorization) {
+        if (authorization != null && authorization.startsWith("Bearer ")) {
+            String token = authorization.substring(7);
+            tokenRevocationService.revoke(token, jwtUtil.validateToken(token));
+        }
+        return Response.noContent().build();
     }
 }

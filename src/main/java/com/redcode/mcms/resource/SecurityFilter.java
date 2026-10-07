@@ -7,6 +7,7 @@ import com.redcode.mcms.security.AuthContext;
 import com.redcode.mcms.security.CurrentUser;
 import com.redcode.mcms.security.JwtUtil;
 import com.redcode.mcms.security.Secured;
+import com.redcode.mcms.security.TokenRevocationService;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
@@ -48,6 +49,9 @@ public class SecurityFilter implements ContainerRequestFilter {
     @Inject
     private AuthContext authContext;
 
+    @Inject
+    private TokenRevocationService tokenRevocationService;
+
     @Override
     public void filter(ContainerRequestContext requestContext) {
 
@@ -57,6 +61,9 @@ public class SecurityFilter implements ContainerRequestFilter {
         }
 
         String token = authHeader.substring("Bearer ".length());
+        if (tokenRevocationService.isRevoked(token)) {
+            throw new UnauthorizedException("Your session has been revoked. Please log in again.");
+        }
         Map<String, String> claims = jwtUtil.validateToken(token);
         if (claims == null) {
             throw new UnauthorizedException("Your session is invalid or has expired. Please log in again.");
