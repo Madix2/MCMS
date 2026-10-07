@@ -1,7 +1,5 @@
 package com.redcode.mcms.service;
 
-import com.redcode.mcms.entity.AuditLog;
-import com.redcode.mcms.repository.AuditLogRepository;
 import com.redcode.mcms.security.AuthContext;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
@@ -14,30 +12,31 @@ import jakarta.persistence.PersistenceContext;
  * Records an immutable audit trail of significant user actions.
  * E.g. "Manager approved Purchase Order #PO-105".
  *
- * The write runs in its own transaction (REQUIRES_NEW) so that the audit record
- * is persisted even if the surrounding business transaction later rolls back.
+ * Audit writes participate in the caller's container-managed transaction.
  */
 @Stateless
-@TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+@TransactionAttribute(TransactionAttributeType.REQUIRED)
 public class AuditService {
 
     @PersistenceContext
     private EntityManager em;
 
     @Inject
-    private AuditLogRepository auditLogRepository;
-
-    @Inject
     private AuthContext authContext;
 
     public void log(String action, String entity, Long entityId, String description) {
-        AuditLog log = new AuditLog();
-        log.setUsername(username());
-        log.setAction(action);
-        log.setEntity(entity);
-        log.setEntityId(entityId);
-        log.setDescription(description);
-        em.persist(log);
+        em.createNativeQuery("INSERT INTO audit_log "
+                        + "(username, action, entity, entity_id, timestamp, description, delta_diff, ip_address, client_token_id) "
+                        + "VALUES (?, ?, ?, CAST(? AS bigint), CURRENT_TIMESTAMP, ?, CAST(? AS jsonb), ?, ?)")
+                .setParameter(1, username())
+                .setParameter(2, action)
+                .setParameter(3, entity)
+                .setParameter(4, entityId)
+                .setParameter(5, description)
+                .setParameter(6, null)
+                .setParameter(7, null)
+                .setParameter(8, null)
+                .executeUpdate();
     }
 
     public void log(String action, String entity, String description) {
