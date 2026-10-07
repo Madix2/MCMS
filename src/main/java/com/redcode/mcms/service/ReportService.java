@@ -102,7 +102,8 @@ public class ReportService {
                 purchaseOrderRepository.findAllOrderedDesc().stream()
                         .map(po -> List.of(po.getPoNumber(), po.getOrderDate().toString(),
                                 po.getSupplier() != null ? po.getSupplier().getName() : "",
-                                po.getStatus().name(), money(po.getTotal()), nullTo(po.getApprovedBy())))
+                                po.getStatus().name(), money(po.getTotal()),
+                                po.getApprovedBy() == null ? "" : po.getApprovedBy().getUsername()))
                         .collect(ArrayList::new, ArrayList::add, ArrayList::addAll));
     }
 

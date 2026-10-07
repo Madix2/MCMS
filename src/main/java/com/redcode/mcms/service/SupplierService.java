@@ -8,6 +8,8 @@ import com.redcode.mcms.exception.NotFoundException;
 import com.redcode.mcms.repository.SupplierRepository;
 import com.redcode.mcms.security.AuthContext;
 import jakarta.ejb.Stateless;
+import jakarta.ejb.TransactionAttribute;
+import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
 
 import java.util.List;
@@ -36,8 +38,10 @@ public class SupplierService {
         return toDto(getSupplier(id));
     }
 
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public SupplierDto create(SupplierDto dto) {
-        authContext.requireRole(AuthContext.RolePermission.PROCUREMENT, AuthContext.RolePermission.ADMIN);
+        authContext.requireRole(AuthContext.RolePermission.PROCUREMENT, AuthContext.RolePermission.MANAGER,
+                AuthContext.RolePermission.ADMIN);
         validate(dto);
         Supplier s = new Supplier();
         apply(dto, s);
@@ -47,8 +51,10 @@ public class SupplierService {
         return toDto(saved);
     }
 
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public SupplierDto update(Long id, SupplierDto dto) {
-        authContext.requireRole(AuthContext.RolePermission.PROCUREMENT, AuthContext.RolePermission.ADMIN);
+        authContext.requireRole(AuthContext.RolePermission.PROCUREMENT, AuthContext.RolePermission.MANAGER,
+                AuthContext.RolePermission.ADMIN);
         validate(dto);
         Supplier s = getSupplier(id);
         apply(dto, s);
@@ -60,8 +66,10 @@ public class SupplierService {
         return toDto(s);
     }
 
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void deactivate(Long id) {
-        authContext.requireRole(AuthContext.RolePermission.PROCUREMENT, AuthContext.RolePermission.ADMIN);
+        authContext.requireRole(AuthContext.RolePermission.PROCUREMENT, AuthContext.RolePermission.MANAGER,
+                AuthContext.RolePermission.ADMIN);
         Supplier s = getSupplier(id);
         s.setStatus(Status.INACTIVE);
         supplierRepository.update(s);

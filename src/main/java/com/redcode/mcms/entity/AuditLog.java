@@ -35,6 +35,15 @@ public class AuditLog implements Serializable {
     @Column(nullable = false, length = 500)
     private String description;
 
+    @Column(name = "delta_diff", columnDefinition = "jsonb")
+    private String deltaDiff;
+
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
+
+    @Column(name = "client_token_id", length = 255)
+    private String clientTokenId;
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getUsername() { return username; }
@@ -49,4 +58,10 @@ public class AuditLog implements Serializable {
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getDeltaDiff() { return deltaDiff; }
+    public void setDeltaDiff(String deltaDiff) { this.deltaDiff = deltaDiff; }
+    public String getIpAddress() { return ipAddress; }
+    public void setIpAddress(String ipAddress) { this.ipAddress = ipAddress; }
+    public String getClientTokenId() { return clientTokenId; }
+    public void setClientTokenId(String clientTokenId) { this.clientTokenId = clientTokenId; }
 }

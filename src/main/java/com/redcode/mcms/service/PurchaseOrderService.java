@@ -9,6 +9,7 @@ import com.redcode.mcms.repository.ProductRepository;
 import com.redcode.mcms.repository.PurchaseOrderRepository;
 import com.redcode.mcms.repository.SupplierRepository;
 import com.redcode.mcms.security.AuthContext;
+import com.redcode.mcms.websocket.ApprovalWebSocket;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
@@ -57,6 +58,12 @@ public class PurchaseOrderService {
 
     @Inject
     private AuthContext authContext;
+
+    @Inject
+    private PurchaseOrderApprovalService approvalService;
+
+    @Inject
+    private EmailNotificationService emailNotificationService;
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public PurchaseOrderDto create(PurchaseOrderRequest request) {
@@ -110,6 +117,8 @@ public class PurchaseOrderService {
 
         notificationService.notify("PO_APPROVAL", "PURCHASE ORDER",
                 "Purchase Order " + updated.getPoNumber() + " requires approval.", "MANAGER");
+        ApprovalWebSocket.broadcastPendingApproval(updated.getId(), updated.getPoNumber(),
+                updated.getSupplier().getName(), updated.getTotal().toPlainString());
         auditService.log("SUBMIT_PO", "PurchaseOrder", updated.getId(),
                 "Purchase Order " + updated.getPoNumber() + " submitted for approval");
         return toDto(updated);
@@ -117,15 +126,12 @@ public class PurchaseOrderService {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public PurchaseOrderDto approve(Long id) {
-        authContext.requireRole(AuthContext.RolePermission.MANAGER, AuthContext.RolePermission.ADMIN);
         PurchaseOrder po = getPurchaseOrder(id);
         if (po.getStatus() != PurchaseOrderStatus.PENDING_APPROVAL) {
             throw new BusinessException("Only purchase orders pending approval can be approved.");
         }
-        po.setStatus(PurchaseOrderStatus.APPROVED);
-        po.setApprovedBy(username());
-        po.setApprovedAt(LocalDateTime.now());
-        PurchaseOrder updated = purchaseOrderRepository.update(po);
+        PurchaseOrder updated = approvalService.process(po.getId(), null);
+        emailNotificationService.sendPurchaseOrderToSupplier(updated);
 
         notificationService.notify("PO_APPROVED", "PURCHASE ORDER",
                 "Purchase Order " + updated.getPoNumber() + " has been approved.", "PROCUREMENT");
@@ -254,8 +260,8 @@ public class PurchaseOrderService {
         dto.setOrderDate(po.getOrderDate());
         dto.setStatus(po.getStatus().name());
         dto.setTotal(po.getTotal());
-        dto.setApprovedBy(po.getApprovedBy());
-        dto.setApprovedAt(po.getApprovedAt());
+        dto.setApprovedBy(po.getApprovedBy() == null ? null : po.getApprovedBy().getUsername());
+        dto.setApprovedAt(po.getApprovalTimestamp() == null ? null : po.getApprovalTimestamp().toLocalDateTime());
         dto.setReceivedBy(po.getReceivedBy());
         dto.setReceivedAt(po.getReceivedAt());
         dto.setNotes(po.getNotes());

@@ -34,4 +34,12 @@ public class PurchaseOrderRepository extends GenericRepository<PurchaseOrder, Lo
                 .setParameter("s", status)
                 .getSingleResult();
     }
+
+    public List<PurchaseOrder> findSupplierVisible(Long supplierId) {
+        return em.createQuery("SELECT DISTINCT po FROM PurchaseOrder po JOIN FETCH po.items i "
+                        + "WHERE po.supplier.id = :supplierId AND po.status IN :statuses ORDER BY po.orderDate DESC", PurchaseOrder.class)
+                .setParameter("supplierId", supplierId)
+                .setParameter("statuses", List.of(PurchaseOrderStatus.APPROVED, PurchaseOrderStatus.COMMUNICATED_TO_SUPPLIER))
+                .getResultList();
+    }
 }

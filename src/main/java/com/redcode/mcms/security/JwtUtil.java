@@ -6,6 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
 import java.util.Map;
+import java.util.HashMap;
 
 /**
  * Minimal dependency-free JWT (JSON Web Token) implementation.
@@ -74,11 +75,13 @@ public class JwtUtil {
             if (System.currentTimeMillis() >= exp) {
                 return null;
             }
-            return Map.of(
-                    "sub", Long.toString(extractNumber(payloadJson, "sub")),
-                    "user", extractString(payloadJson, "user"),
-                    "role", extractString(payloadJson, "role")
-            );
+            Map<String, String> claims = new HashMap<>();
+            claims.put("sub", Long.toString(extractNumber(payloadJson, "sub")));
+            claims.put("user", extractString(payloadJson, "user"));
+            claims.put("role", extractString(payloadJson, "role"));
+            String supplierId = extractOptionalNumber(payloadJson, "supplierId");
+            if (supplierId != null) claims.put("supplierId", supplierId);
+            return claims;
         } catch (Exception e) {
             return null;
         }
@@ -133,6 +136,17 @@ public class JwtUtil {
         int start = idx + token.length();
         int end = json.indexOf('"', start);
         return json.substring(start, end < 0 ? json.length() : end);
+    }
+
+    private String extractOptionalNumber(String json, String key) {
+        String token = "\"" + key + "\":";
+        int idx = json.indexOf(token);
+        if (idx < 0) return null;
+        int start = idx + token.length();
+        int end = json.indexOf(',', start);
+        if (end < 0) end = json.indexOf('}', start);
+        String value = json.substring(start, end).trim();
+        return value.matches("[0-9]+") ? value : null;
     }
 
     private String jsonEscape(String value) {

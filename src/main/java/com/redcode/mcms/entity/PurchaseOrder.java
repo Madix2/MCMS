@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,11 +42,12 @@ public class PurchaseOrder implements Serializable {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal total = BigDecimal.ZERO;
 
-    @Column(name = "approved_by", length = 100)
-    private String approvedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approved_by")
+    private User approvedBy;
 
-    @Column(name = "approved_at")
-    private LocalDateTime approvedAt;
+    @Column(name = "approval_timestamp")
+    private OffsetDateTime approvalTimestamp;
 
     @Column(name = "received_by", length = 100)
     private String receivedBy;
@@ -71,10 +73,10 @@ public class PurchaseOrder implements Serializable {
     public void setStatus(PurchaseOrderStatus status) { this.status = status; }
     public BigDecimal getTotal() { return total; }
     public void setTotal(BigDecimal total) { this.total = total; }
-    public String getApprovedBy() { return approvedBy; }
-    public void setApprovedBy(String approvedBy) { this.approvedBy = approvedBy; }
-    public LocalDateTime getApprovedAt() { return approvedAt; }
-    public void setApprovedAt(LocalDateTime approvedAt) { this.approvedAt = approvedAt; }
+    public User getApprovedBy() { return approvedBy; }
+    public void setApprovedBy(User approvedBy) { this.approvedBy = approvedBy; }
+    public OffsetDateTime getApprovalTimestamp() { return approvalTimestamp; }
+    public void setApprovalTimestamp(OffsetDateTime approvalTimestamp) { this.approvalTimestamp = approvalTimestamp; }
     public String getReceivedBy() { return receivedBy; }
     public void setReceivedBy(String receivedBy) { this.receivedBy = receivedBy; }
     public LocalDateTime getReceivedAt() { return receivedAt; }
