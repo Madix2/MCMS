@@ -46,6 +46,6 @@ public class AuthContext {
 
     /** Allowed roles for authorisation checks. */
     public enum RolePermission {
-        MANAGER, ADMIN, ADMINISTRATOR, SALES, INVENTORY, PROCUREMENT, FINANCE, HR, MARKETING, SUPPLIER
+        MANAGER, ADMIN, ADMINISTRATOR, CASHIER, SALES, INVENTORY, PROCUREMENT, FINANCE, HR, MARKETING, SUPPLIER
     }
 }

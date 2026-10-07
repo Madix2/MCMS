@@ -9,6 +9,7 @@ import com.redcode.mcms.repository.CustomerRepository;
 import com.redcode.mcms.repository.ProductRepository;
 import com.redcode.mcms.repository.PromotionRepository;
 import com.redcode.mcms.repository.SaleRepository;
+import com.redcode.mcms.repository.UserRepository;
 import com.redcode.mcms.security.AuthContext;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
@@ -73,9 +74,30 @@ public class SalesService {
     @Inject
     private AuthContext authContext;
 
+    @Inject
+    private UserRepository userRepository;
+
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public SaleDto createSale(SaleRequest request) {
         authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.ADMIN);
+        return createSaleInternal(request, authContext.getUser().getId(), false);
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public SaleDto createSale(SaleRequest request, Long cashierUserId) {
+        return createSaleInternal(request, cashierUserId, true);
+    }
+
+    private SaleDto createSaleInternal(SaleRequest request, Long cashierUserId, boolean cashierOnly) {
+        if (cashierUserId == null || !authContext.isAuthenticated()
+                || !cashierUserId.equals(authContext.getUser().getId())) {
+            throw new BusinessException("Sale owner must be the authenticated user.");
+        }
+        User cashier = userRepository.findById(cashierUserId)
+                .orElseThrow(() -> new NotFoundException("Cashier account not found."));
+        if (cashierOnly && cashier.getRole() != Role.CASHIER) {
+            throw new BusinessException("Only users with the CASHIER role may use the cashier sale workflow.");
+        }
 
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new BusinessException("A sale must contain at least one product.");
@@ -96,6 +118,7 @@ public class SalesService {
         Sale sale = new Sale();
         sale.setSaleNumber(generateSaleNumber());
         sale.setCustomer(customer);
+        sale.setCashier(cashier);
         sale.setSaleDate(LocalDateTime.now());
 
         BigDecimal subtotal = BigDecimal.ZERO;
@@ -206,7 +229,7 @@ public class SalesService {
                     .collect(Collectors.joining("\n"));
             emailJsService.sendReceipt(customer.getEmail(), saved.getSaleNumber(),
                     customer.getFullName(), items, saved.getTotal().toString(),
-                    method.name(), saved.getSaleDate().toString());
+                    method.name(), saved.getSaleDate().toString(), saved.getCashier().getFullName());
         }
 
         return toDto(saved);
@@ -228,6 +251,12 @@ public class SalesService {
     public List<SaleDto> listByCustomer(Long customerId) {
         return saleRepository.findByCustomer(customerId).stream().map(this::toDto).collect(Collectors.toList());
     }
+
+    public List<SaleDto> listByCashier(Long cashierId) {
+        return saleRepository.findByCashier(cashierId).stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    public long totalUniqueCustomers() { return customerRepository.count(); }
 
     /**
      * Generates a unique sale number, e.g. "S-20260831-0001".
@@ -267,6 +296,7 @@ public class SalesService {
             dto.setPaymentReference(s.getPayment().getReference());
             dto.setPaymentStatus("APPROVED");
         }
+        if (s.getCashier() != null) dto.setCashierName(s.getCashier().getFullName());
         for (SaleItem item : s.getItems()) {
             SaleDto.SaleItemDto idto = new SaleDto.SaleItemDto();
             idto.setProductId(item.getProduct().getId());

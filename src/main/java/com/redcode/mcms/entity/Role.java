@@ -7,6 +7,7 @@ package com.redcode.mcms.entity;
 public enum Role {
     ADMIN,
     ADMINISTRATOR,
+    CASHIER,
     SUPPLIER,
     MANAGER,
     SALES,

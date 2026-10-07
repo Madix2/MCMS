@@ -16,7 +16,10 @@ import java.util.List;
  */
 @Entity
 @Table(name = "sale",
-        indexes = @Index(name = "idx_sale_date", columnList = "sale_date"))
+        indexes = {
+                @Index(name = "idx_sale_date", columnList = "sale_date"),
+                @Index(name = "idx_sale_cashier", columnList = "cashier_id")
+        })
 public class Sale implements Serializable {
 
     @Id
@@ -29,6 +32,10 @@ public class Sale implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private Customer customer;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cashier_id", nullable = false)
+    private User cashier;
 
     @Column(name = "sale_date", nullable = false)
     private LocalDateTime saleDate = LocalDateTime.now();
@@ -67,6 +74,8 @@ public class Sale implements Serializable {
     public void setSaleNumber(String saleNumber) { this.saleNumber = saleNumber; }
     public Customer getCustomer() { return customer; }
     public void setCustomer(Customer customer) { this.customer = customer; }
+    public User getCashier() { return cashier; }
+    public void setCashier(User cashier) { this.cashier = cashier; }
     public LocalDateTime getSaleDate() { return saleDate; }
     public void setSaleDate(LocalDateTime saleDate) { this.saleDate = saleDate; }
     public BigDecimal getSubtotal() { return subtotal; }

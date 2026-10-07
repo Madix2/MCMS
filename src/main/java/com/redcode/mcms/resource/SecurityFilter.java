@@ -14,9 +14,11 @@ import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.container.ContainerRequestFilter;
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.SecurityContext;
 import jakarta.ws.rs.ext.Provider;
 
 import java.util.Map;
+import java.security.Principal;
 
 /**
  * Authentication filter.
@@ -78,5 +80,16 @@ public class SecurityFilter implements ContainerRequestFilter {
         }
 
         authContext.setUser(new CurrentUser(user.getId(), user.getUsername(), user.getRole().name()));
+        final String role = user.getRole().name();
+        final String userId = Long.toString(user.getId());
+        requestContext.setSecurityContext(new SecurityContext() {
+            @Override public Principal getUserPrincipal() { return () -> userId; }
+            @Override public boolean isUserInRole(String requestedRole) {
+                return role.equalsIgnoreCase(requestedRole)
+                        || ("ADMINISTRATOR".equalsIgnoreCase(requestedRole) && "ADMIN".equalsIgnoreCase(role));
+            }
+            @Override public boolean isSecure() { return requestContext.getUriInfo().getRequestUri().getScheme().equalsIgnoreCase("https"); }
+            @Override public String getAuthenticationScheme() { return "Bearer"; }
+        });
     }
 }

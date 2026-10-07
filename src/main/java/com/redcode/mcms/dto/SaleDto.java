@@ -14,6 +14,7 @@ public class SaleDto {
     private String saleNumber;
     private Long customerId;
     private String customerName;
+    private String cashierName;
     private LocalDateTime saleDate;
     private BigDecimal subtotal;
     private BigDecimal tax;
@@ -57,6 +58,8 @@ public class SaleDto {
     public void setCustomerId(Long customerId) { this.customerId = customerId; }
     public String getCustomerName() { return customerName; }
     public void setCustomerName(String customerName) { this.customerName = customerName; }
+    public String getCashierName() { return cashierName; }
+    public void setCashierName(String cashierName) { this.cashierName = cashierName; }
     public LocalDateTime getSaleDate() { return saleDate; }
     public void setSaleDate(LocalDateTime saleDate) { this.saleDate = saleDate; }
     public BigDecimal getSubtotal() { return subtotal; }

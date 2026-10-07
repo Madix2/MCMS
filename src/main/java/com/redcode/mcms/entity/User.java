@@ -56,6 +56,10 @@ public class User implements Serializable {
     public void setEmployee(Employee employee) { this.employee = employee; }
     public Supplier getSupplier() { return supplier; }
     public void setSupplier(Supplier supplier) { this.supplier = supplier; }
+    public String getFullName() {
+        return employee == null || employee.getFullName() == null || employee.getFullName().isBlank()
+                ? username : employee.getFullName();
+    }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

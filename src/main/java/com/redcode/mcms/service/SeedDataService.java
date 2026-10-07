@@ -175,7 +175,8 @@ public class SeedDataService {
         createUser("admin", "admin123", Role.ADMIN, "System Administrator", depMgmt, "Administrator");
         createUser("manager", "manager123", Role.MANAGER, "Thandi Mabuza", depMgmt, "Store Manager");
         createUser("sales", "sales123", Role.SALES, "Kagiso Ndlovu", depSales, "Sales Associate");
-        createUser("sales2", "sales123", Role.SALES, "Yolanda Cele", depSales, "Cashier");
+        createUser("sales2", "sales123", Role.CASHIER, "Yolanda Cele", depSales, "Cashier");
+        createUser("cashier", "cashier123", Role.CASHIER, "Brenda Jacobs", depSales, "Cashier");
         createUser("inventory", "inventory123", Role.INVENTORY, "Sibusiso Khumalo", depInv, "Inventory Controller");
         createUser("procurement", "procurement123", Role.PROCUREMENT, "Anele Zulu", depProc, "Procurement Officer");
         createUser("finance", "finance123", Role.FINANCE, "Priya Naidoo", depFin, "Accountant");

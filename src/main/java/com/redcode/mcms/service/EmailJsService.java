@@ -23,7 +23,8 @@ public class EmailJsService {
 
     @Asynchronous
     public void sendReceipt(String recipient, String saleNumber, String customerName,
-                            String items, String total, String paymentMethod, String saleDate) {
+                            String items, String total, String paymentMethod, String saleDate,
+                            String cashierName) {
         if (recipient == null || recipient.isBlank()) return;
 
         String serviceId = setting("MCMS_EMAILJS_SERVICE_ID", "service_7t7hs2g");
@@ -35,6 +36,7 @@ public class EmailJsService {
 
         String message = "Customer: " + customerName + "\n"
                 + "Sale number: " + saleNumber + "\n"
+                + "Cashier: " + cashierName + "\n"
                 + "Date: " + saleDate + "\n"
                 + "Items:\n" + items + "\n"
                 + "Total: R" + total + "\n"
@@ -53,6 +55,7 @@ public class EmailJsService {
         params.put("total", total);
         params.put("payment_method", paymentMethod);
         params.put("sale_date", saleDate);
+        params.put("cashier_name", cashierName);
 
         StringBuilder body = new StringBuilder("{\"service_id\":\"")
                 .append(escape(serviceId)).append("\",\"template_id\":\"")

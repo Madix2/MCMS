@@ -46,6 +46,13 @@ public class SaleRepository extends GenericRepository<Sale, Long> {
                 .getResultList();
     }
 
+    public List<Sale> findByCashier(Long cashierId) {
+        return em.createQuery("SELECT s FROM Sale s WHERE s.cashier.id = :cashierId ORDER BY s.saleDate DESC",
+                        Sale.class)
+                .setParameter("cashierId", cashierId)
+                .getResultList();
+    }
+
     public BigDecimal sumRevenueBetween(LocalDateTime from, LocalDateTime to) {
         BigDecimal total = em.createQuery(
                         "SELECT COALESCE(SUM(s.total), 0) FROM Sale s WHERE s.saleDate BETWEEN :from AND :to",
