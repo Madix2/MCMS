@@ -8,6 +8,7 @@ public enum PurchaseOrderStatus {
     PENDING_APPROVAL,
     APPROVED,
     COMMUNICATED_TO_SUPPLIER,
+    ACKNOWLEDGED,
     REJECTED,
     ORDERED,
     PARTIALLY_RECEIVED,

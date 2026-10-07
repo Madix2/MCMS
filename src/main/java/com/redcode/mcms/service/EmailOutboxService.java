@@ -7,6 +7,7 @@ import com.redcode.mcms.entity.PurchaseOrderItem;
 import com.redcode.mcms.entity.PurchaseOrderStatus;
 import com.redcode.mcms.repository.EmailOutboxRepository;
 import com.redcode.mcms.repository.PurchaseOrderRepository;
+import com.redcode.mcms.security.SupplierConfirmationTokenService;
 import jakarta.ejb.Stateless;
 import jakarta.ejb.TransactionAttribute;
 import jakarta.ejb.TransactionAttributeType;
@@ -19,12 +20,14 @@ import jakarta.mail.internet.MimeMessage;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 @Stateless
 public class EmailOutboxService {
     @Inject private EmailOutboxRepository outboxRepository;
     @Inject private PurchaseOrderRepository purchaseOrderRepository;
+    @Inject private SupplierConfirmationTokenService tokenService;
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void enqueue(PurchaseOrder po) {
@@ -36,6 +39,9 @@ public class EmailOutboxService {
         message.setPurchaseOrderId(po.getId());
         message.setRecipient(po.getSupplier().getEmail());
         message.setSubject("MegaMart purchase order " + po.getPoNumber());
+        LocalDateTime expiry = LocalDateTime.now().plusHours(72);
+        po.setConfirmationToken(tokenService.issue(po.getId(), po.getSupplier().getId(), expiry.toInstant(java.time.ZoneOffset.UTC)));
+        po.setTokenExpiryTimestamp(expiry);
         message.setHtmlBody(render(po));
         outboxRepository.save(message);
     }
@@ -72,7 +78,18 @@ public class EmailOutboxService {
             html.append("<tr><td>").append(escape(item.getProduct().getName())).append("</td><td>")
                     .append(item.getQuantity()).append("</td><td>").append(item.getUnitCost()).append("</td></tr>");
         }
-        return html.append("</table><p>Total: ").append(po.getTotal()).append("</p></body></html>").toString();
+        String link = portalBaseUrl() + "/supplier-confirm.xhtml?token=" + po.getConfirmationToken();
+        return html.append("</table><p>Total: ").append(po.getTotal())
+                .append("</p><p><a href='").append(escape(link))
+                .append("' style='display:inline-block;padding:12px 18px;background:#146c94;color:#fff;text-decoration:none'>Review and acknowledge order</a></p>")
+                .append("<p>This link expires in 72 hours. No action is taken by opening the link.</p></body></html>").toString();
+    }
+
+    private String portalBaseUrl() {
+        String value = System.getenv("MCMS_SUPPLIER_PORTAL_BASE_URL");
+        if (value == null || value.isBlank()) value = System.getProperty("MCMS_SUPPLIER_PORTAL_BASE_URL");
+        if (value == null || value.isBlank()) value = "http://duckdns.org";
+        return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
     private Session mailSession() throws NamingException {

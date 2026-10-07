@@ -49,6 +49,12 @@ public class PurchaseOrder implements Serializable {
     @Column(name = "approval_timestamp")
     private OffsetDateTime approvalTimestamp;
 
+    @Column(name = "confirmation_token", length = 512)
+    private String confirmationToken;
+
+    @Column(name = "token_expiry_timestamp")
+    private LocalDateTime tokenExpiryTimestamp;
+
     @Column(name = "received_by", length = 100)
     private String receivedBy;
 
@@ -77,6 +83,10 @@ public class PurchaseOrder implements Serializable {
     public void setApprovedBy(User approvedBy) { this.approvedBy = approvedBy; }
     public OffsetDateTime getApprovalTimestamp() { return approvalTimestamp; }
     public void setApprovalTimestamp(OffsetDateTime approvalTimestamp) { this.approvalTimestamp = approvalTimestamp; }
+    public String getConfirmationToken() { return confirmationToken; }
+    public void setConfirmationToken(String confirmationToken) { this.confirmationToken = confirmationToken; }
+    public LocalDateTime getTokenExpiryTimestamp() { return tokenExpiryTimestamp; }
+    public void setTokenExpiryTimestamp(LocalDateTime tokenExpiryTimestamp) { this.tokenExpiryTimestamp = tokenExpiryTimestamp; }
     public String getReceivedBy() { return receivedBy; }
     public void setReceivedBy(String receivedBy) { this.receivedBy = receivedBy; }
     public LocalDateTime getReceivedAt() { return receivedAt; }

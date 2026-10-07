@@ -3,6 +3,7 @@ package com.redcode.mcms.repository;
 import com.redcode.mcms.entity.PurchaseOrder;
 import com.redcode.mcms.entity.PurchaseOrderStatus;
 import jakarta.ejb.Stateless;
+import jakarta.persistence.LockModeType;
 
 import java.util.List;
 
@@ -41,5 +42,13 @@ public class PurchaseOrderRepository extends GenericRepository<PurchaseOrder, Lo
                 .setParameter("supplierId", supplierId)
                 .setParameter("statuses", List.of(PurchaseOrderStatus.APPROVED, PurchaseOrderStatus.COMMUNICATED_TO_SUPPLIER))
                 .getResultList();
+    }
+
+    public java.util.Optional<PurchaseOrder> findByConfirmationToken(String token) {
+        return em.createQuery("SELECT po FROM PurchaseOrder po WHERE po.confirmationToken = :token",
+                        PurchaseOrder.class)
+                .setParameter("token", token)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultStream().findFirst();
     }
 }

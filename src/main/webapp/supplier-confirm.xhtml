@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Supplier Purchase Order Confirmation</title>
+    <style>
+        :root { color-scheme: light; font-family: Arial, sans-serif; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #eef4f7; color: #19323c; }
+        main { width: min(92vw, 520px); padding: 2rem; background: white; border-radius: 14px; box-shadow: 0 12px 35px #19323c22; text-align: center; }
+        h1 { margin-top: 0; color: #146c94; }
+        button { border: 0; border-radius: 8px; padding: 0.9rem 1.3rem; font-size: 1rem; font-weight: 700; color: white; background: #146c94; cursor: pointer; }
+        button:disabled { opacity: .6; cursor: wait; }
+        #message { min-height: 1.5rem; margin: 1.25rem 0; }
+        .success { color: #167044; } .error { color: #a32626; }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Purchase Order Confirmation</h1>
+    <p>Review the order details provided in your email, then explicitly confirm receipt below.</p>
+    <p id="message" role="status" aria-live="polite"></p>
+    <button id="confirm" type="button">Acknowledge Purchase Order</button>
+</main>
+<script>
+    (function () {
+        'use strict';
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+        const button = document.getElementById('confirm');
+        const message = document.getElementById('message');
+        if (!token) {
+            button.disabled = true;
+            message.textContent = 'This confirmation link is missing its token.';
+            message.className = 'error';
+            return;
+        }
+        // No network request is made until the supplier explicitly clicks the button.
+        button.addEventListener('click', async function () {
+            button.disabled = true;
+            message.textContent = 'Submitting confirmation...';
+            try {
+                const endpoint = new URL('api/supplier-portal/acknowledge-order', window.location.href);
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
+                const body = await response.json().catch(function () { return {}; });
+                if (!response.ok) throw new Error(body.message || 'The confirmation could not be completed.');
+                message.textContent = body.message || 'Purchase order acknowledged successfully.';
+                message.className = 'success';
+                button.remove();
+            } catch (error) {
+                message.textContent = error.message || 'The confirmation could not be completed.';
+                message.className = 'error';
+                button.disabled = false;
+            }
+        });
+    }());
+</script>
+</body>
+</html>

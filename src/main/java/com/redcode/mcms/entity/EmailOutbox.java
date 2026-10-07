@@ -22,8 +22,7 @@ public class EmailOutbox implements Serializable {
     @Column(nullable = false, length = 255)
     private String subject;
 
-    @Lob
-    @Column(name = "html_body", nullable = false)
+    @Column(name = "html_body", nullable = false, columnDefinition = "TEXT")
     private String htmlBody;
 
     @Enumerated(EnumType.STRING)

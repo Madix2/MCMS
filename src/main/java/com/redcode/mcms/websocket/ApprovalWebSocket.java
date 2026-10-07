@@ -35,6 +35,15 @@ public class ApprovalWebSocket {
         }
     }
 
+    public static void broadcastSupplierAcknowledged(Long id, String poNumber, String supplier) {
+        String json = "{\"event\":\"SUPPLIER_ACKNOWLEDGED\",\"id\":" + id
+                + ",\"poNumber\":\"" + jsonEscape(poNumber) + "\",\"supplier\":\""
+                + jsonEscape(supplier) + "\"}";
+        for (Session session : SESSIONS) {
+            if (session.isOpen()) session.getAsyncRemote().sendText(json);
+        }
+    }
+
     private static String jsonEscape(String value) {
         return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
     }
