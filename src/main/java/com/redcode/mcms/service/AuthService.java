@@ -49,7 +49,8 @@ public class AuthService {
             throw new BusinessException("This account has been deactivated. Contact an administrator.");
         }
 
-        String token = jwtUtil.createToken(user.getId(), user.getUsername(), user.getRole().name());
+        String token = jwtUtil.createToken(user.getId(), user.getUsername(), user.getRole().name(),
+                user.getSupplier() == null ? null : user.getSupplier().getId());
 
         auditService.log("LOGIN", "User", user.getUsername() + " logged in");
 

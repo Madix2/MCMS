@@ -45,13 +45,18 @@ public class JwtUtil {
     }
 
     public String createToken(Long userId, String username, String role) {
+        return createToken(userId, username, role, null);
+    }
+
+    public String createToken(Long userId, String username, String role, Long supplierId) {
         long now = System.currentTimeMillis();
         String header = b64("{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
+        String supplierClaim = supplierId == null ? "" : ",\"supplierId\":" + supplierId;
         String payload = b64("{\"sub\":" + userId
                 + ",\"user\":\"" + jsonEscape(username)
                 + "\",\"role\":\"" + jsonEscape(role)
                 + "\",\"iat\":" + now
-                + ",\"exp\":" + (now + EXPIRY_MILLIS) + "}");
+                + ",\"exp\":" + (now + EXPIRY_MILLIS) + supplierClaim + "}");
         String signature = sign(header + "." + payload);
         return header + "." + payload + "." + signature;
     }

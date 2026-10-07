@@ -22,7 +22,10 @@ public class VendorSecurityFilter implements ContainerRequestFilter {
         String header = context.getHeaderString(HttpHeaders.AUTHORIZATION);
         if (header == null || !header.startsWith("Bearer ")) throw new UnauthorizedException("Vendor authentication is required.");
         Map<String, String> claims = jwtUtil.validateToken(header.substring(7));
-        if (claims == null || claims.get("supplierId") == null) throw new UnauthorizedException("A supplier identity claim is required.");
+        if (claims == null || claims.get("supplierId") == null
+                || !"SUPPLIER".equalsIgnoreCase(claims.get("role"))) {
+            throw new UnauthorizedException("A supplier identity claim and SUPPLIER role are required.");
+        }
         try { context.setProperty("supplierId", Long.valueOf(claims.get("supplierId"))); }
         catch (NumberFormatException e) { throw new UnauthorizedException("Supplier identity claim is invalid."); }
     }

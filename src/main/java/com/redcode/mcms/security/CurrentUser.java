@@ -22,6 +22,7 @@ public class CurrentUser {
     public String getRole() { return role; }
 
     public boolean hasRole(String requiredRole) {
-        return "ADMIN".equalsIgnoreCase(role) || requiredRole.equalsIgnoreCase(role);
+        return "ADMIN".equalsIgnoreCase(role) || "ADMINISTRATOR".equalsIgnoreCase(role)
+                || requiredRole.equalsIgnoreCase(role);
     }
 }

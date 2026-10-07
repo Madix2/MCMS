@@ -125,12 +125,12 @@ public class PurchaseOrderService {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
-    public PurchaseOrderDto approve(Long id) {
+    public PurchaseOrderDto approve(Long id, String administrativeOverrideToken) {
         PurchaseOrder po = getPurchaseOrder(id);
         if (po.getStatus() != PurchaseOrderStatus.PENDING_APPROVAL) {
             throw new BusinessException("Only purchase orders pending approval can be approved.");
         }
-        PurchaseOrder updated = approvalService.process(po.getId(), null);
+        PurchaseOrder updated = approvalService.process(po.getId(), administrativeOverrideToken);
         emailNotificationService.sendPurchaseOrderToSupplier(updated);
 
         notificationService.notify("PO_APPROVED", "PURCHASE ORDER",

@@ -36,6 +36,7 @@ public class AuditLog implements Serializable {
     private String description;
 
     @Column(name = "delta_diff", columnDefinition = "jsonb")
+    @Convert(converter = JsonbStringConverter.class)
     private String deltaDiff;
 
     @Column(name = "ip_address", length = 45)

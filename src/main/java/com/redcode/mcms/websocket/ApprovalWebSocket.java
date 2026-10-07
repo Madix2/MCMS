@@ -8,13 +8,15 @@ import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-@ServerEndpoint("/ws/approvals")
+@ServerEndpoint(value = "/ws/approvals", configurator = ApprovalWebSocketConfigurator.class)
 public class ApprovalWebSocket {
     private static final Set<Session> SESSIONS = ConcurrentHashMap.newKeySet();
 
     @OnOpen
     public void open(Session session) throws IOException {
-        if (session.getUserPrincipal() == null) {
+        String role = (String) session.getUserProperties().get("approvalRole");
+        if (session.getUserPrincipal() == null || (!"MANAGER".equalsIgnoreCase(role)
+                && !"ADMIN".equalsIgnoreCase(role) && !"ADMINISTRATOR".equalsIgnoreCase(role))) {
             session.close();
             return;
         }

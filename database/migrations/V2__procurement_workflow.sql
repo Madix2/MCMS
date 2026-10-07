@@ -36,3 +36,12 @@ END $$;
 ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS delta_diff JSONB;
 ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS ip_address VARCHAR(45);
 ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS client_token_id VARCHAR(255);
+
+ALTER TABLE app_user ADD COLUMN IF NOT EXISTS supplier_id BIGINT;
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_app_user_supplier') THEN
+        ALTER TABLE app_user ADD CONSTRAINT fk_app_user_supplier
+            FOREIGN KEY (supplier_id) REFERENCES supplier(id);
+    END IF;
+END $$;

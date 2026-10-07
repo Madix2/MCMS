@@ -65,8 +65,9 @@ public class PurchaseOrderResource {
 
     @PUT
     @Path("/{id}/approve")
-    public PurchaseOrderDto approve(@PathParam("id") Long id) {
-        return purchaseOrderService.approve(id);
+    public PurchaseOrderDto approve(@PathParam("id") Long id,
+                                    @HeaderParam("X-Admin-Override-Token") String overrideToken) {
+        return purchaseOrderService.approve(id, overrideToken);
     }
 
     @PUT

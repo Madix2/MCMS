@@ -13,6 +13,8 @@ import jakarta.ejb.TransactionAttributeType;
 import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 @Stateless
 public class PurchaseOrderApprovalService {
@@ -27,8 +29,7 @@ public class PurchaseOrderApprovalService {
                 .orElseThrow(() -> new BusinessException("Purchase order not found."));
         BigDecimal total = po.getTotal() == null ? BigDecimal.ZERO : po.getTotal();
         if (total.compareTo(new BigDecimal("200000")) > 0) {
-            if (!authContext.isAuthenticated() || !authContext.getUser().getRole().equalsIgnoreCase("ADMIN")
-                    || administrativeOverrideToken == null || administrativeOverrideToken.isBlank()) {
+            if (!isAdministrator() || !validOverrideToken(administrativeOverrideToken)) {
                 throw new BusinessException("Orders above R200,000 require an ADMINISTRATOR security authorization override token.");
             }
         } else if (total.compareTo(new BigDecimal("50000")) >= 0) {
@@ -39,5 +40,17 @@ public class PurchaseOrderApprovalService {
         po.setApprovalTimestamp(OffsetDateTime.now());
         po.setStatus(PurchaseOrderStatus.APPROVED);
         return purchaseOrderRepository.update(po);
+    }
+
+    private boolean isAdministrator() {
+        return authContext.isAuthenticated() && ("ADMIN".equalsIgnoreCase(authContext.getUser().getRole())
+                || "ADMINISTRATOR".equalsIgnoreCase(authContext.getUser().getRole()));
+    }
+
+    private boolean validOverrideToken(String token) {
+        String configured = System.getenv("MCMS_ADMIN_OVERRIDE_TOKEN");
+        if (configured == null || configured.isBlank()) configured = System.getProperty("MCMS_ADMIN_OVERRIDE_TOKEN");
+        if (configured == null || configured.isBlank() || token == null || token.isBlank()) return false;
+        return MessageDigest.isEqual(configured.getBytes(StandardCharsets.UTF_8), token.getBytes(StandardCharsets.UTF_8));
     }
 }

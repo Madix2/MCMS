@@ -1,8 +1,10 @@
 package com.redcode.mcms.entity;
 
+import jakarta.persistence.Embeddable;
 import java.io.Serializable;
 import java.util.Objects;
 
+@Embeddable
 public class SupplierProductMapId implements Serializable {
     private Long productId;
     private Long supplierId;

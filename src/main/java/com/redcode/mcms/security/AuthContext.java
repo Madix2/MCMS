@@ -33,7 +33,7 @@ public class AuthContext {
         if (!isAuthenticated()) {
             throw new ForbiddenException("You are not authorised to perform this action.");
         }
-        if (currentUser.hasRole("ADMIN")) {
+        if (currentUser.hasRole("ADMIN") || currentUser.hasRole("ADMINISTRATOR")) {
             return;
         }
         for (RolePermission role : allowedRoles) {
@@ -46,6 +46,6 @@ public class AuthContext {
 
     /** Allowed roles for authorisation checks. */
     public enum RolePermission {
-        MANAGER, ADMIN, SALES, INVENTORY, PROCUREMENT, FINANCE, HR, MARKETING
+        MANAGER, ADMIN, ADMINISTRATOR, SALES, INVENTORY, PROCUREMENT, FINANCE, HR, MARKETING, SUPPLIER
     }
 }
