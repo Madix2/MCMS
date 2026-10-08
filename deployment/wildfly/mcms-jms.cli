@@ -1,0 +1,3 @@
+# Run only after verifying the messaging-activemq subsystem is installed.
+# This creates the queue expected by a future EmailOutbox MDB.
+/subsystem=messaging-activemq/server=default/jms-queue=mcmsEmail:add(entries=["java:/jms/queue/mcmsEmail"])
