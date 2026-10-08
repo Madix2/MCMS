@@ -87,7 +87,14 @@ public class SeedDataService {
     public void seed() {
         try {
             if (userRepository.count() > 0) {
-                // Already seeded
+                userTransaction.begin();
+                try {
+                    ensureCashierAccount();
+                    userTransaction.commit();
+                } catch (Exception e) {
+                    userTransaction.rollback();
+                    throw e;
+                }
                 return;
             }
             userTransaction.begin();
@@ -188,6 +195,13 @@ public class SeedDataService {
         employee("Lindiwe Ngcobo", "lindiwe.ngcobo@megamart.co.za", depProc, "Procurement Assistant", Role.PROCUREMENT, "071 222 1103");
         employee("Rajesh Govender", "rajesh.govender@megamart.co.za", depFin, "Junior Accountant", Role.FINANCE, "071 222 1104");
         employee("Zanele Motaung", "zanele.motaung@megamart.co.za", depMkt, "Social Media Specialist", Role.MARKETING, "071 222 1105");
+    }
+
+    private void ensureCashierAccount() {
+        if (userRepository.findByUsername("cashier").isEmpty()) {
+            createUser("cashier", "cashier123", Role.CASHIER, "Brenda Jacobs",
+                    departmentRepository.findByName("Sales"), "Cashier");
+        }
     }
 
     private void createUser(String username, String password, Role role, String name, Department dep, String position) {

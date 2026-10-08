@@ -25,3 +25,8 @@ ALTER TABLE app_user ADD CONSTRAINT app_user_role_check CHECK
               'INVENTORY', 'PROCUREMENT', 'FINANCE', 'HR', 'MARKETING'));
 
 UPDATE app_user SET role = 'CASHIER' WHERE username = 'sales2' AND role = 'SALES';
+
+ALTER TABLE employee DROP CONSTRAINT IF EXISTS employee_role_check;
+ALTER TABLE employee ADD CONSTRAINT employee_role_check CHECK
+    (role IS NULL OR role IN ('ADMIN', 'ADMINISTRATOR', 'MANAGER', 'CASHIER', 'SUPPLIER', 'SALES',
+                              'INVENTORY', 'PROCUREMENT', 'FINANCE', 'HR', 'MARKETING'));
