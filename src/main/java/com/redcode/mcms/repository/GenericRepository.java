@@ -57,6 +57,8 @@ public abstract class GenericRepository<T, ID> {
         return em.merge(entity);
     }
 
+    public void delete(T entity) { em.remove(em.contains(entity) ? entity : em.merge(entity)); }
+
     private boolean hasId(T entity) {
         try {
             java.lang.reflect.Method getId = entityClass.getMethod("getId");

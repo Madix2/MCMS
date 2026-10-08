@@ -782,13 +782,14 @@
 
     /* ================= PURCHASE ORDERS ================= */
     async function viewPurchaseOrders(view) {
+        const isManager = ['MANAGER', 'ADMIN'].includes(Api.user().role);
         const suppliers = await Api.get('/suppliers?q=');
         const products = await Api.get('/products?q=');
         view.innerHTML = `<div class="page-header"><div><h2>Purchase Orders</h2></div><button class="btn btn-primary" id="btn-add-po">+ New Purchase Order</button></div>
             <div class="toolbar"><select id="po-filter"><option value="">All statuses</option>
             ${['DRAFT','PENDING_APPROVAL','APPROVED','REJECTED','ORDERED','PARTIALLY_RECEIVED','RECEIVED','CANCELLED'].map(s => `<option>${s}</option>`).join('')}</select></div>
             <div class="card"><div class="card-body"><div class="table-wrap"><table class="tbl"><thead><tr>
-            <th>PO #</th><th>Date</th><th>Supplier</th><th>Status</th><th class="num">Total</th><th>Approved By</th><th></th>
+            <th>PO #</th><th>Date</th><th>Supplier</th><th>Status</th><th>Expected</th><th>Paid</th><th>Transit</th><th class="num">Total</th><th>Approved By</th><th></th>
             </tr></thead><tbody id="po-tbody"></tbody></table></div></div></div>`;
         const color = (s) => ({ 'APPROVED':'badge-green','RECEIVED':'badge-green','PENDING_APPROVAL':'badge-amber','REJECTED':'badge-red','DRAFT':'badge-gray','ORDERED':'badge-blue','PARTIALLY_RECEIVED':'badge-blue','CANCELLED':'badge-gray' }[s] || 'badge-gray');
         const load = async () => {
@@ -798,17 +799,21 @@
                 <td><strong>${Api.esc(po.poNumber)}</strong></td><td>${Api.dateTime(po.orderDate)}</td>
                 <td>${Api.esc(po.supplierName)}</td>
                 <td><span class="badge ${color(po.status)}">${po.status}</span></td>
+                <td>${po.expectedArrivalDate ? Api.esc(po.expectedArrivalDate) : '—'}</td>
+                <td>${po.paid ? 'Yes' : 'No'}</td><td>${po.inTransit ? 'On the way' : '—'}</td>
                 <td class="num"><strong>${Api.money(po.total)}</strong></td><td>${Api.esc(po.approvedBy || '—')}</td>
                 <td><button class="btn btn-outline btn-sm" data-a="view" data-id="${po.id}">View</button>
                 ${po.status === 'DRAFT' ? `<button class="btn btn-secondary btn-sm" data-a="submit" data-id="${po.id}">Submit</button>` : ''}
                 ${po.status === 'ORDERED' || po.status === 'APPROVED' ? `<button class="btn btn-success btn-sm" data-a="receive" data-id="${po.id}">Receive</button>` : ''}
+                ${isManager && (po.status === 'APPROVED' || po.status === 'ORDERED') ? `<button class="btn btn-secondary btn-sm" data-a="logistics" data-id="${po.id}">Logistics</button>` : ''}
                 </div></td></tr>`).join('') || '<tr><td colspan="7" class="empty">No purchase orders</td></tr>';
             $('po-tbody').querySelectorAll('[data-a]').forEach(b => b.onclick = async () => {
                 const id = Number(b.dataset.id);
                 const po = list.find(x => x.id === id);
                 if (b.dataset.a === 'view') poModal(po);
                 if (b.dataset.a === 'submit') { await Api.post(`/purchase-orders/${id}/submit`); Api.toast('Submitted for approval', 'success'); load(); }
-                if (b.dataset.a === 'receive') { await Api.post(`/purchase-orders/${id}/receive`); Api.toast('Order received — inventory updated', 'success'); load(); navigate('inventory')||load(); }
+                if (b.dataset.a === 'receive') { const receivingNotes = prompt('Receiving notes (optional):', po.receivingNotes || '') || ''; const missingItems = prompt('Missing or short items (optional):', po.missingItems || '') || ''; await Api.post(`/purchase-orders/${id}/receive`, { receivingNotes, missingItems }); Api.toast('Order received — inventory updated', 'success'); load(); navigate('inventory')||load(); }
+                if (b.dataset.a === 'logistics') { const expectedArrivalDate = prompt('Expected arrival date (YYYY-MM-DD):', po.expectedArrivalDate || ''); if (!expectedArrivalDate) return; const paid = confirm('Has this purchase order been paid?'); const inTransit = confirm('Is this purchase order on its way?'); await Api.put(`/purchase-orders/${id}/logistics`, { paid, inTransit, expectedArrivalDate, notes: prompt('Manager logistics note (optional):', po.notes || '') || '' }); Api.toast('Logistics updated', 'success'); load(); }
             });
         };
         load();
@@ -819,23 +824,25 @@
     function poModal(po) {
         Api.get('/suppliers?q=').then(suppliers => {
             const isEdit = !!po;
+            const editable = !isEdit || po.status === 'DRAFT';
             modal(`
                 <div class="modal-head"><h3>${isEdit ? `Purchase Order ${po.poNumber}` : 'New Purchase Order'}</h3></div>
                 <div class="modal-body">
-                    ${isEdit ? `<div class="flex between mb-2"><span>Status:</span><span class="badge badge-amber">${po.status}</span></div><div class="table-wrap"><table class="tbl"><thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Unit Cost</th><th class="num">Line Total</th></tr></thead><tbody>${po.items.map(i => `<tr><td>${Api.esc(i.productName)}</td><td class="num">${i.quantity}</td><td class="num">${Api.money(i.unitCost)}</td><td class="num">${Api.money(i.lineTotal)}</td></tr>`).join('')}</tbody></table></div><h3 style="margin:12px 0">Total: ${Api.money(po.total)}</h3>`
-                    : `<div><label>Supplier *</label><select id="po-supplier">${suppliers.map(s => `<option value="${s.id}">${Api.esc(s.name)}</option>`).join('')}</select></div>
+                    ${!editable ? `<div class="flex between mb-2"><span>Status:</span><span class="badge badge-amber">${po.status}</span></div><div class="table-wrap"><table class="tbl"><thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Unit Cost</th><th class="num">Line Total</th></tr></thead><tbody>${po.items.map(i => `<tr><td>${Api.esc(i.productName)}</td><td class="num">${i.quantity}</td><td class="num">${Api.money(i.unitCost)}</td><td class="num">${Api.money(i.lineTotal)}</td></tr>`).join('')}</tbody></table></div><h3 style="margin:12px 0">Total: ${Api.money(po.total)}</h3><p>Expected arrival: ${po.expectedArrivalDate || 'Not set'}<br/>Paid: ${po.paid ? 'Yes' : 'No'}<br/>On the way: ${po.inTransit ? 'Yes' : 'No'}<br/>Missing items: ${Api.esc(po.missingItems || 'None')}</p>`
+                    : `<div><label>Supplier *</label><select id="po-supplier">${suppliers.map(s => `<option value="${s.id}" ${po && po.supplierId === s.id ? 'selected' : ''}>${Api.esc(s.name)}</option>`).join('')}</select></div>
                     <div class="toolbar mt-2"><select id="po-product" disabled><option value="">Select a supplier first…</option></select>
                     <button class="btn btn-secondary btn-sm" id="po-add" disabled>Add</button></div>
                     <div id="po-items"></div>`}
-                    ${isEdit ? '' : '<div class="mt-2"><label>Notes</label><input id="po-notes"></div>'}
+                    <div class="mt-2"><label>Notes</label><input id="po-notes" value="${Api.esc(po && po.notes || '')}"></div>
                 </div>
                 <div class="modal-foot">
                     <button class="btn btn-ghost" id="m-cancel">Close</button>
-                    ${isEdit ? '' : '<button class="btn btn-primary" id="m-save">Create Purchase Order</button>'}
+                    ${editable ? `<button class="btn btn-primary" id="m-save">${isEdit ? 'Save Draft Changes' : 'Create Purchase Order'}</button>` : ''}
+                    ${isEdit && editable ? '<button class="btn btn-danger" id="m-delete">Delete Draft</button>' : ''}
                 </div>`
             );
-            if (!isEdit) {
-                const cartLines = [];
+            if (editable) {
+                const cartLines = isEdit ? po.items.map(i => ({ productId: i.productId, name: i.productName, cost: Number(i.unitCost), qty: i.quantity })) : [];
                 const productSelect = $('po-product');
 
                 const renderProducts = (supplierId) => {
@@ -893,10 +900,13 @@
                     });
                     const items = cartLines.map(l => ({ productId: l.productId, quantity: l.qty }));
                     try {
-                        await Api.post('/purchase-orders', { supplierId: Number($('po-supplier').value), items, notes: $('po-notes').value });
-                        Api.toast('Purchase order created', 'success'); closeModal(); navigate(currentRoute);
+                        const body = { supplierId: Number($('po-supplier').value), items, notes: $('po-notes').value };
+                        if (isEdit) await Api.put(`/purchase-orders/${po.id}`, body); else await Api.post('/purchase-orders', body);
+                        Api.toast(isEdit ? 'Draft updated' : 'Purchase order created', 'success'); closeModal(); navigate(currentRoute);
                     } catch (e) { Api.toast(e.message, 'error'); }
                 };
+                if (isEdit) $('m-delete').onclick = async () => { if (confirm('Delete this draft purchase order?')) { await Api.del(`/purchase-orders/${po.id}`); closeModal(); Api.toast('Draft deleted', 'success'); navigate(currentRoute); } };
+                if (isEdit) renderProducts(po.supplierId);
                 renderItems();
             }
         });

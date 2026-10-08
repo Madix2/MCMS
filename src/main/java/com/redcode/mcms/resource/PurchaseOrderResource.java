@@ -2,6 +2,8 @@ package com.redcode.mcms.resource;
 
 import com.redcode.mcms.dto.PurchaseOrderDto;
 import com.redcode.mcms.dto.PurchaseOrderRequest;
+import com.redcode.mcms.dto.PurchaseOrderLogisticsRequest;
+import com.redcode.mcms.dto.PurchaseOrderReceiptRequest;
 import com.redcode.mcms.security.Secured;
 import com.redcode.mcms.service.PurchaseOrderService;
 import jakarta.inject.Inject;
@@ -57,6 +59,25 @@ public class PurchaseOrderResource {
                 .entity(purchaseOrderService.create(request)).build();
     }
 
+    @PUT
+    @Path("/{id}")
+    public PurchaseOrderDto updateDraft(@PathParam("id") Long id, @Valid PurchaseOrderRequest request) {
+        return purchaseOrderService.updateDraft(id, request);
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public Response deleteDraft(@PathParam("id") Long id) {
+        purchaseOrderService.deleteDraft(id);
+        return Response.noContent().build();
+    }
+
+    @PUT
+    @Path("/{id}/logistics")
+    public PurchaseOrderDto logistics(@PathParam("id") Long id, @Valid PurchaseOrderLogisticsRequest request) {
+        return purchaseOrderService.updateLogistics(id, request);
+    }
+
     @POST
     @Path("/{id}/submit")
     public PurchaseOrderDto submit(@PathParam("id") Long id) {
@@ -84,7 +105,7 @@ public class PurchaseOrderResource {
 
     @POST
     @Path("/{id}/receive")
-    public PurchaseOrderDto receive(@PathParam("id") Long id) {
-        return purchaseOrderService.receive(id);
+    public PurchaseOrderDto receive(@PathParam("id") Long id, @Valid PurchaseOrderReceiptRequest request) {
+        return purchaseOrderService.receive(id, request);
     }
 }

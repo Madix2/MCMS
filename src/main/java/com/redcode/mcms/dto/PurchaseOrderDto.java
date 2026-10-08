@@ -2,6 +2,7 @@ package com.redcode.mcms.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +23,12 @@ public class PurchaseOrderDto {
     private String receivedBy;
     private LocalDateTime receivedAt;
     private String notes;
+    private boolean paid;
+    private LocalDateTime paidAt;
+    private boolean inTransit;
+    private LocalDate expectedArrivalDate;
+    private String receivingNotes;
+    private String missingItems;
     private List<PoItemDto> items = new ArrayList<>();
 
     public static class PoItemDto {
@@ -70,6 +77,18 @@ public class PurchaseOrderDto {
     public void setReceivedAt(LocalDateTime receivedAt) { this.receivedAt = receivedAt; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+    public boolean isPaid() { return paid; }
+    public void setPaid(boolean paid) { this.paid = paid; }
+    public LocalDateTime getPaidAt() { return paidAt; }
+    public void setPaidAt(LocalDateTime paidAt) { this.paidAt = paidAt; }
+    public boolean isInTransit() { return inTransit; }
+    public void setInTransit(boolean inTransit) { this.inTransit = inTransit; }
+    public LocalDate getExpectedArrivalDate() { return expectedArrivalDate; }
+    public void setExpectedArrivalDate(LocalDate expectedArrivalDate) { this.expectedArrivalDate = expectedArrivalDate; }
+    public String getReceivingNotes() { return receivingNotes; }
+    public void setReceivingNotes(String receivingNotes) { this.receivingNotes = receivingNotes; }
+    public String getMissingItems() { return missingItems; }
+    public void setMissingItems(String missingItems) { this.missingItems = missingItems; }
     public List<PoItemDto> getItems() { return items; }
     public void setItems(List<PoItemDto> items) { this.items = items; }
 }

@@ -2,6 +2,8 @@ package com.redcode.mcms.service;
 
 import com.redcode.mcms.dto.PurchaseOrderDto;
 import com.redcode.mcms.dto.PurchaseOrderRequest;
+import com.redcode.mcms.dto.PurchaseOrderLogisticsRequest;
+import com.redcode.mcms.dto.PurchaseOrderReceiptRequest;
 import com.redcode.mcms.entity.*;
 import com.redcode.mcms.exception.BusinessException;
 import com.redcode.mcms.exception.NotFoundException;
@@ -125,6 +127,55 @@ public class PurchaseOrderService {
     }
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public PurchaseOrderDto updateDraft(Long id, PurchaseOrderRequest request) {
+        authContext.requireRole(AuthContext.RolePermission.PROCUREMENT, AuthContext.RolePermission.ADMIN);
+        PurchaseOrder po = getPurchaseOrder(id);
+        if (po.getStatus() != PurchaseOrderStatus.DRAFT) throw new BusinessException("Only draft orders can be edited.");
+        if (request.getItems() == null || request.getItems().isEmpty()) throw new BusinessException("A purchase order must contain at least one product.");
+        Supplier supplier = supplierRepository.findById(request.getSupplierId()).orElseThrow(() -> new NotFoundException("Supplier not found."));
+        po.setSupplier(supplier);
+        po.setNotes(request.getNotes());
+        po.getItems().clear();
+        BigDecimal total = BigDecimal.ZERO;
+        for (PurchaseOrderRequest.PoItem line : request.getItems()) {
+            Product product = productRepository.findById(line.getProductId()).orElseThrow(() -> new NotFoundException("Product not found."));
+            PurchaseOrderItem item = new PurchaseOrderItem();
+            item.setPurchaseOrder(po); item.setProduct(product); item.setQuantity(line.getQuantity());
+            item.setUnitCost(product.getCostPrice());
+            item.setLineTotal(product.getCostPrice().multiply(BigDecimal.valueOf(line.getQuantity())).setScale(2, RoundingMode.HALF_UP));
+            total = total.add(item.getLineTotal()); po.getItems().add(item);
+        }
+        po.setTotal(total.setScale(2, RoundingMode.HALF_UP));
+        return toDto(purchaseOrderRepository.update(po));
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public void deleteDraft(Long id) {
+        authContext.requireRole(AuthContext.RolePermission.PROCUREMENT, AuthContext.RolePermission.ADMIN);
+        PurchaseOrder po = getPurchaseOrder(id);
+        if (po.getStatus() != PurchaseOrderStatus.DRAFT) throw new BusinessException("Only draft orders can be deleted.");
+        purchaseOrderRepository.delete(po);
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public PurchaseOrderDto updateLogistics(Long id, PurchaseOrderLogisticsRequest request) {
+        authContext.requireRole(AuthContext.RolePermission.MANAGER, AuthContext.RolePermission.ADMIN);
+        PurchaseOrder po = getPurchaseOrder(id);
+        if (po.getStatus() != PurchaseOrderStatus.APPROVED
+                && po.getStatus() != PurchaseOrderStatus.COMMUNICATED_TO_SUPPLIER
+                && po.getStatus() != PurchaseOrderStatus.ACKNOWLEDGED
+                && po.getStatus() != PurchaseOrderStatus.ORDERED) {
+            throw new BusinessException("Only approved orders can receive logistics updates.");
+        }
+        po.setPaid(request.getPaid()); po.setInTransit(request.getInTransit());
+        po.setExpectedArrivalDate(request.getExpectedArrivalDate());
+        if (request.getPaid()) po.setPaidAt(po.getPaidAt() == null ? LocalDateTime.now() : po.getPaidAt());
+        if (request.getNotes() != null && !request.getNotes().isBlank()) po.setNotes(request.getNotes());
+        if (request.getInTransit()) po.setStatus(PurchaseOrderStatus.ORDERED);
+        return toDto(purchaseOrderRepository.update(po));
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public PurchaseOrderDto approve(Long id, String administrativeOverrideToken) {
         PurchaseOrder po = getPurchaseOrder(id);
         if (po.getStatus() != PurchaseOrderStatus.PENDING_APPROVAL) {
@@ -185,9 +236,15 @@ public class PurchaseOrderService {
      */
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public PurchaseOrderDto receive(Long id) {
+        return receive(id, null);
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRED)
+    public PurchaseOrderDto receive(Long id, PurchaseOrderReceiptRequest receipt) {
         authContext.requireRole(AuthContext.RolePermission.PROCUREMENT,
                 AuthContext.RolePermission.INVENTORY, AuthContext.RolePermission.ADMIN);
         PurchaseOrder po = getPurchaseOrder(id);
+        if (receipt != null) { po.setReceivingNotes(receipt.getReceivingNotes()); po.setMissingItems(receipt.getMissingItems()); }
         if (po.getStatus() == PurchaseOrderStatus.RECEIVED || po.getStatus() == PurchaseOrderStatus.CANCELLED) {
             throw new BusinessException("This purchase order cannot be received.");
         }
@@ -265,6 +322,9 @@ public class PurchaseOrderService {
         dto.setReceivedBy(po.getReceivedBy());
         dto.setReceivedAt(po.getReceivedAt());
         dto.setNotes(po.getNotes());
+        dto.setPaid(po.isPaid()); dto.setPaidAt(po.getPaidAt()); dto.setInTransit(po.isInTransit());
+        dto.setExpectedArrivalDate(po.getExpectedArrivalDate());
+        dto.setReceivingNotes(po.getReceivingNotes()); dto.setMissingItems(po.getMissingItems());
         if (po.getSupplier() != null) {
             dto.setSupplierId(po.getSupplier().getId());
             dto.setSupplierName(po.getSupplier().getName());

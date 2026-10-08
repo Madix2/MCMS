@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,6 +71,24 @@ public class PurchaseOrder implements Serializable {
     @Column(length = 500)
     private String notes;
 
+    @Column(nullable = false)
+    private boolean paid;
+
+    @Column(name = "paid_at")
+    private LocalDateTime paidAt;
+
+    @Column(name = "in_transit", nullable = false)
+    private boolean inTransit;
+
+    @Column(name = "expected_arrival_date")
+    private LocalDate expectedArrivalDate;
+
+    @Column(name = "receiving_notes", length = 1000)
+    private String receivingNotes;
+
+    @Column(name = "missing_items", length = 1000)
+    private String missingItems;
+
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<PurchaseOrderItem> items = new ArrayList<>();
 
@@ -103,6 +122,18 @@ public class PurchaseOrder implements Serializable {
     public void setReceivedAt(LocalDateTime receivedAt) { this.receivedAt = receivedAt; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
+    public boolean isPaid() { return paid; }
+    public void setPaid(boolean paid) { this.paid = paid; }
+    public LocalDateTime getPaidAt() { return paidAt; }
+    public void setPaidAt(LocalDateTime paidAt) { this.paidAt = paidAt; }
+    public boolean isInTransit() { return inTransit; }
+    public void setInTransit(boolean inTransit) { this.inTransit = inTransit; }
+    public LocalDate getExpectedArrivalDate() { return expectedArrivalDate; }
+    public void setExpectedArrivalDate(LocalDate expectedArrivalDate) { this.expectedArrivalDate = expectedArrivalDate; }
+    public String getReceivingNotes() { return receivingNotes; }
+    public void setReceivingNotes(String receivingNotes) { this.receivingNotes = receivingNotes; }
+    public String getMissingItems() { return missingItems; }
+    public void setMissingItems(String missingItems) { this.missingItems = missingItems; }
     public List<PurchaseOrderItem> getItems() { return items; }
     public void setItems(List<PurchaseOrderItem> items) { this.items = items; }
 }
