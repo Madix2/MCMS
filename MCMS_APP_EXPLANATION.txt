@@ -1,0 +1,345 @@
+MEGAMART CENTRAL MANAGEMENT SYSTEM (MCMS)
+Full Application Explanation
+
+IMPORTANT: JAKARTA
+===================
+MCMS is built on JAKARTA EE 10. Jakarta is the central technology foundation
+of this application. The backend uses Jakarta RESTful Web Services (JAX-RS),
+Jakarta Persistence (JPA), Jakarta Enterprise Beans (EJB), Jakarta Contexts and
+Dependency Injection (CDI), Jakarta Transactions (JTA), Jakarta Bean Validation,
+and Jakarta Servlet configuration.
+
+This is a Jakarta enterprise web application, not a standalone desktop program.
+It runs as a Java WAR application on a Jakarta EE application server such as
+Payara 6 or WildFly 28+. Its REST API is exposed under the /api path, and its
+browser interface communicates with that API.
+
+
+1. APPLICATION PURPOSE
+======================
+The MegaMart Central Management System is a browser-based central platform for
+managing supermarket operations. It brings the main business activities of a
+retail company into one application and one PostgreSQL database.
+
+MCMS connects:
+- Point-of-sale sales and checkout
+- Product and inventory management
+- Stock movement tracking and low-stock monitoring
+- Suppliers and purchase orders
+- Purchase-order approval and receiving
+- Finance summaries and business reporting
+- Customer records and loyalty information
+- Employee and attendance management
+- Promotions, campaigns, and marketing activity
+- Notifications
+- Audit logs for important actions
+- Secure supplier purchase-order acknowledgement and delivery progress
+
+The purpose is to give each department the tools it needs while keeping sales,
+stock, purchasing, finance, and management information connected and
+consistent.
+
+
+2. WHO USES THE APPLICATION
+===========================
+MCMS supports role-based access. Each user signs in and sees the parts of the
+application that apply to their job.
+
+- Administrator: Full system access, configuration, monitoring, and auditing.
+- Manager: Management dashboards, approvals, operational oversight, and reports.
+- Sales: New sales, checkout, sales history, and customer-related operations.
+- Inventory: Products, stock levels, stock adjustments, and stock movements.
+- Procurement: Suppliers, purchase orders, low-stock items, and receiving.
+- Finance: Finance dashboard and financial reports.
+- HR: Employee and attendance management.
+- Marketing: Customers, promotions, and campaigns.
+- Cashier: Daily POS sales created by that cashier only; no analytics or global history.
+
+Access is enforced on the server. Hiding a menu item in the browser is not the
+only protection; backend services also verify the user's role before allowing
+restricted operations.
+
+
+3. MAIN USER EXPERIENCE
+=======================
+The frontend is a responsive single-page application made with HTML5, CSS3,
+and JavaScript. The user first sees a login screen. After successful login,
+MCMS displays a dashboard and a role-specific sidebar.
+
+The application includes:
+- A dashboard with sales, revenue, products, customers, employees, and stock
+  statistics.
+- Revenue trend charts with administrator-selectable periods.
+- Top-selling product and inventory-by-category charts.
+- A notification drawer and recent activity information.
+- Responsive navigation that works on desktop and smaller screens.
+- Toast messages and inline error messages for user feedback.
+- Browser-generated receipt and multi-receipt PDF downloads using jsPDF.
+- Cashier accounts open directly on New Sale and can view only their current-day sales.
+
+
+4. SALES AND POINT OF SALE
+==========================
+The Sales module provides the New Sale screen and Sales History.
+
+In a normal checkout workflow, a sales user:
+1. Opens Sales > New Sale.
+2. Selects products and quantities.
+3. Applies eligible promotions when available.
+4. Selects a payment method and enters the amount tendered.
+5. Completes the sale.
+6. Views the receipt and can download it as a PDF.
+
+Completing a sale is transactional. The sale, sale items, payment, inventory
+deduction, stock movement, loyalty update, notification, and audit information
+are handled as one business operation. If a required part fails, the
+transaction can roll back so that the database does not contain a completed
+sale with missing inventory updates.
+
+Cashier isolation is enforced at the database, service, REST, and frontend layers.
+Each sale stores its owning cashier user in `sale.cashier_id`. The dedicated
+`/api/v1/cashier` API never accepts a cashier ID from the client. Cashiers can
+create sales and view only their own sales for the current day. Global dashboards,
+reports, finance data, and global sales history are blocked for CASHIER accounts.
+For non-cash payment methods, Amount Tendered is automatically set to the sale
+total; cash payments remain editable.
+
+The application includes demonstration-only fake payment outcomes:
+- SUCCESS
+- DECLINED_INSUFFICIENT_FUNDS
+- DECLINED_EXPIRED_CARD
+- DECLINED_NETWORK
+
+No real payment provider is contacted by these scenarios. A declined payment
+returns an error and rolls back the sale and inventory changes.
+
+Sales History supports searching and date-range filtering. Administrators can
+also export multiple receipts, with one receipt per PDF page.
+
+
+5. INVENTORY MANAGEMENT
+=======================
+The Inventory area manages the products that MegaMart sells.
+
+Users with the appropriate role can:
+- Create, update, and remove products.
+- Organize products by category.
+- View prices, descriptions, current quantity, and stock limits.
+- Adjust stock when an authorized correction is needed.
+- View a product's stock movement history.
+- Identify products that have reached or fallen below their minimum stock level.
+
+Stock movements provide a record of quantity changes, including sales,
+adjustments, and received purchase orders. Low-stock notifications help the
+business react before products become unavailable. A scheduled Jakarta EJB
+Timer Service job also performs low-stock reconciliation after imports or
+other external updates.
+
+
+6. PROCUREMENT AND PURCHASE ORDERS
+==================================
+Procurement connects low inventory levels to supplier ordering.
+
+The purchase-order workflow is:
+1. A procurement user chooses a supplier and adds products to a new order.
+2. The order is saved as DRAFT.
+3. The procurement user submits it for approval.
+4. The status changes to PENDING_APPROVAL.
+5. A manager or administrator approves or rejects the order.
+6. An approved order can be received.
+7. Receiving increases inventory and records stock movements for its lines.
+
+This workflow provides separation of duties: the person preparing an order does
+not automatically approve it. Unauthorized approval attempts are rejected by
+the backend.
+
+Approved purchase orders are placed in a transactional PostgreSQL email outbox.
+A scheduled EJB worker retries delivery through Brevo SMTP. A supplier receives
+an acknowledgement link and a separate delivery-progress link. Both pages make
+no database-changing request on load; an explicit human button click sends a
+POST request. Progress can be set to SHIPPED or DELAYED and is immediately
+visible to procurement, managers, and administrators through the purchase-order
+status and WebSocket notification.
+
+
+7. FINANCE AND REPORTING
+========================
+The Finance Dashboard summarizes business income and purchasing expenses. The
+general dashboard also shows sales trends and operational totals.
+
+The Reports area provides business data for authorized users. Reports can be
+viewed as JSON and downloaded as CSV where supported. Reporting helps managers,
+finance users, inventory staff, and procurement users make decisions from the
+same operational data used by the rest of the application.
+
+
+8. CUSTOMERS, HUMAN RESOURCES, AND MARKETING
+============================================
+Customer management stores customer records used by sales and marketing. The
+sales process can associate customer and loyalty information with transactions.
+
+Human Resources provides employee records and attendance functionality for HR,
+managers, and administrators.
+
+Marketing users can manage:
+- Promotions linked to real inventory products
+- Campaigns with dates, budgets, descriptions, and statuses
+- Social marketing posts
+
+Active promotions can be made available in the point-of-sale flow, connecting
+marketing decisions directly to real products and customer purchases.
+
+
+9. NOTIFICATIONS AND AUDITING
+=============================
+MCMS generates notifications for relevant operational events, including
+low-stock conditions and other business activity. Users can see notifications
+on the dashboard or open the notification drawer.
+
+Audit logs record important actions and provide administrators and managers
+with a history of changes and workflows. This makes it easier to investigate
+what happened during sales, inventory changes, purchasing, approvals, and other
+protected operations.
+
+
+10. SECURITY
+===========
+Authentication uses a custom HMAC-SHA256 JSON Web Token (JWT) utility and a
+security filter. Passwords are stored as bcrypt hashes rather than plain text.
+After login, the browser sends the JWT with API requests.
+
+Authorization is checked in the backend service layer through the current user
+and role context. The system distinguishes authentication failures from
+forbidden operations and returns appropriate API errors.
+
+JWT logout revocation is supported, supplier API requests are rate-limited, and
+supplier identity is bound to a supplier claim. Confirmation and progress links
+use short-lived HMAC-signed tokens, exact database token matching, expiry checks,
+and single-use acknowledgement token clearing.
+
+Production deployments must provide a strong MCMS_JWT_SECRET environment
+variable of at least 32 characters. The development fallback secret must not be
+used in production.
+
+
+11. TECHNICAL ARCHITECTURE
+==========================
+The application follows a layered Jakarta architecture:
+
+- Browser frontend: HTML, CSS, and JavaScript single-page application.
+- REST resources: Jakarta JAX-RS endpoints under /api.
+- Services: Business rules, workflows, transactions, and role checks.
+- Repositories: Database access and query operations.
+- Entities: Jakarta JPA mappings for business data.
+- DTOs: Structured request and response data between the API and frontend.
+- Security: JWT authentication, request filtering, and role authorization.
+- Messaging reliability: transactional email outbox with retry worker.
+- Database: PostgreSQL relational storage.
+- Application server: Payara 6 or WildFly with Jakarta EE 10 support.
+
+JTA transactions are especially important for checkout and purchase receiving,
+where several related records must succeed or fail together. CDI and EJB manage
+injection and service lifecycles, while Bean Validation checks incoming data.
+
+
+12. TECHNOLOGY STACK
+====================
+- Jakarta EE 10
+- Jakarta RESTful Web Services (JAX-RS)
+- Jakarta Persistence 3.0 (JPA)
+- Jakarta Enterprise Beans (EJB)
+- Jakarta Contexts and Dependency Injection (CDI)
+- Jakarta Transactions (JTA)
+- Jakarta Bean Validation
+- Java 17
+- Maven
+- PostgreSQL 14 or later
+- Payara 6 or WildFly 28 or later
+- HTML5, CSS3, and JavaScript
+- Fetch API for REST communication
+- Chart.js for dashboard charts
+- jsPDF for receipt PDFs
+- Jakarta Mail with Brevo SMTP for supplier purchase-order communication
+- Nginx as an optional reverse proxy in hosted deployments
+
+
+13. API AND DEPLOYMENT
+======================
+The project is packaged as a WAR file named mcms.war. The usual local context
+root is /mcms, giving the application URL:
+
+http://localhost:8080/mcms/
+
+The REST API base path is:
+
+/mcms/api
+
+Important endpoint groups include authentication, health, dashboard, products,
+sales, purchase orders, customers, suppliers, finance, HR, marketing, reports,
+notifications, and audit logs.
+
+Cashier endpoints:
+
+- `GET /mcms/api/v1/cashier/sales`
+- `POST /mcms/api/v1/cashier/sales`
+
+Supplier portal endpoints:
+
+- `POST /mcms/api/supplier-portal/acknowledge-order`
+- `POST /mcms/api/supplier-portal/update-progress`
+- `/mcms/supplier-confirm.xhtml`
+- `/mcms/supplier-progress.xhtml`
+
+The application expects a JTA PostgreSQL datasource bound to:
+
+java:/jdbc/mcms
+
+Health endpoints include a public liveness check and a database readiness check.
+On first deployment, Hibernate can create or update the schema and the startup
+seed service can add demonstration data.
+
+
+14. COMPLETE BUSINESS FLOW EXAMPLE
+==================================
+The integrated workflow demonstrates how the modules work together:
+
+1. A cashier completes a POS sale.
+2. MCMS records the sale and payment.
+3. Product stock is automatically reduced.
+4. A stock movement is recorded.
+5. If stock is below its minimum, a low-stock notification appears.
+6. A procurement user creates and submits a purchase order.
+7. A manager or administrator approves the order.
+8. Procurement receives the order.
+9. Inventory increases and new stock movements are recorded.
+10. Finance sees the revenue and purchasing expense information.
+11. Administrators and managers can review the resulting audit history.
+
+This integrated design is one of MCMS's main strengths: departments use separate
+screens, but they work from the same connected business records.
+
+
+15. CURRENT LIMITATIONS AND FUTURE IMPROVEMENTS
+===============================================
+Potential future improvements include:
+- Automated unit, integration, and end-to-end tests
+- Automated PostgreSQL backup and restore
+- HTTPS with a trusted certificate
+- Sales returns, refunds, and payment reversals
+- Multi-branch inventory and reporting
+- Versioned database migrations instead of automatic schema updates
+- Pagination for large product, sales, and audit tables
+- Integration with a real payment provider
+- JMS-backed outbox consumption when server queue provisioning is standardized
+- MicroProfile Metrics, Health, and OpenTelemetry dashboards
+
+
+SUMMARY
+=======
+MCMS is a complete supermarket operations platform that centralizes retail
+management in one browser application. Its most important defining feature is
+that it is a JAKARTA EE 10 enterprise application: Jakarta technologies power
+the REST API, persistence, dependency injection, transactions, validation,
+security integration, and application deployment. The platform connects
+MegaMart's staff, stock, sales, purchasing, finance, customers, HR, marketing,
+reports, notifications, and audit records into one consistent system.
