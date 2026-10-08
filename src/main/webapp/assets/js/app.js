@@ -307,6 +307,7 @@
 
         $('pos-search').addEventListener('input', (e) => renderPosResults(e.target.value));
         $('pos-checkout').addEventListener('click', checkout);
+        $('pos-pay-method').addEventListener('change', syncTenderedAmount);
         document.querySelectorAll('input[name="pos-cust-type"]').forEach(r => r.onchange = () => {
             const registered = document.querySelector('input[name="pos-cust-type"]:checked').value === 'registered';
             $('pos-customer-wrap').classList.toggle('hidden', !registered);
@@ -319,6 +320,13 @@
         renderPosResults('');
         renderCart();
         $('pos-search').focus();
+    }
+
+    function syncTenderedAmount() {
+        const tendered = $('pos-tendered');
+        const nonCash = $('pos-pay-method').value !== 'CASH';
+        tendered.readOnly = nonCash;
+        tendered.value = nonCash ? renderCartTotals.total.toFixed(2) : '';
     }
 
     function updateCustomerPoints() {
@@ -378,6 +386,7 @@
         $('cart-tax').textContent = Api.money(tax);
         $('cart-total').textContent = Api.money(total);
         renderCartTotals = { subtotal, discount, tax, total };
+        syncTenderedAmount();
 
         el.querySelectorAll('[data-a]').forEach(btn => {
             btn.onclick = () => {
