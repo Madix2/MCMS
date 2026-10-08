@@ -11,8 +11,16 @@ public class SupplierConfirmationTokenService {
     private static final String PURPOSE = "SUPPLIER_PO_CONFIRMATION";
 
     public String issue(Long orderId, Long supplierId, Instant expiresAt) {
+        return issue(orderId, supplierId, expiresAt, PURPOSE);
+    }
+
+    public String issueProgress(Long orderId, Long supplierId, Instant expiresAt) {
+        return issue(orderId, supplierId, expiresAt, "SUPPLIER_PO_PROGRESS");
+    }
+
+    private String issue(Long orderId, Long supplierId, Instant expiresAt, String purpose) {
         String header = encode("{\"alg\":\"HS256\",\"typ\":\"JWT\"}");
-        String payload = encode("{\"purpose\":\"" + PURPOSE + "\",\"orderId\":" + orderId
+        String payload = encode("{\"purpose\":\"" + purpose + "\",\"orderId\":" + orderId
                 + ",\"supplierId\":" + supplierId + ",\"exp\":" + expiresAt.getEpochSecond() + "}");
         return header + "." + payload + "." + sign(header + "." + payload);
     }
@@ -23,16 +31,17 @@ public class SupplierConfirmationTokenService {
             if (parts.length != 3 || !MessageDigest.isEqual(sign(parts[0] + "." + parts[1])
                     .getBytes(StandardCharsets.UTF_8), parts[2].getBytes(StandardCharsets.UTF_8))) return null;
             String json = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-            if (!PURPOSE.equals(stringClaim(json, "purpose"))) return null;
+            String purpose = stringClaim(json, "purpose");
+            if (!PURPOSE.equals(purpose) && !"SUPPLIER_PO_PROGRESS".equals(purpose)) return null;
             long expiry = numberClaim(json, "exp");
             if (Instant.now().getEpochSecond() >= expiry) return null;
-            return new Claims(numberClaim(json, "orderId"), numberClaim(json, "supplierId"), expiry);
+            return new Claims(numberClaim(json, "orderId"), numberClaim(json, "supplierId"), expiry, purpose);
         } catch (RuntimeException e) {
             return null;
         }
     }
 
-    public record Claims(Long orderId, Long supplierId, long expiryEpochSeconds) { }
+    public record Claims(Long orderId, Long supplierId, long expiryEpochSeconds, String purpose) { }
 
     private String sign(String input) {
         try {

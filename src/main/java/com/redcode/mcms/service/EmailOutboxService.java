@@ -42,6 +42,8 @@ public class EmailOutboxService {
         LocalDateTime expiry = LocalDateTime.now().plusHours(72);
         po.setConfirmationToken(tokenService.issue(po.getId(), po.getSupplier().getId(), expiry.toInstant(java.time.ZoneOffset.UTC)));
         po.setTokenExpiryTimestamp(expiry);
+        po.setProgressToken(tokenService.issueProgress(po.getId(), po.getSupplier().getId(), expiry.toInstant(java.time.ZoneOffset.UTC)));
+        po.setProgressTokenExpiryTimestamp(expiry);
         message.setHtmlBody(render(po));
         outboxRepository.save(message);
     }
@@ -79,9 +81,12 @@ public class EmailOutboxService {
                     .append(item.getQuantity()).append("</td><td>").append(item.getUnitCost()).append("</td></tr>");
         }
         String link = portalBaseUrl() + "/supplier-confirm.xhtml?token=" + po.getConfirmationToken();
+        String progressLink = portalBaseUrl() + "/supplier-progress.xhtml?token=" + po.getProgressToken();
         return html.append("</table><p>Total: ").append(po.getTotal())
                 .append("</p><p><a href='").append(escape(link))
                 .append("' style='display:inline-block;padding:12px 18px;background:#146c94;color:#fff;text-decoration:none'>Review and acknowledge order</a></p>")
+                .append("<p><a href='").append(escape(progressLink))
+                .append("' style='display:inline-block;padding:12px 18px;background:#2f855a;color:#fff;text-decoration:none'>Update delivery progress</a></p>")
                 .append("<p>This link expires in 72 hours. No action is taken by opening the link.</p></body></html>").toString();
     }
 

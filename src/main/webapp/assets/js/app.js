@@ -5,9 +5,9 @@
     /* ---------------- Navigation definition ---------------- */
     const NAV = [
         { key: 'dashboard', label: 'Dashboard', icon: '🏠', roles: ['ADMIN','MANAGER','SALES','INVENTORY','PROCUREMENT','FINANCE','HR','MARKETING'] },
-        { label: 'Sales', icon: '🛒', group: true, roles: ['ADMIN','MANAGER','SALES'] },
-        { key: 'new-sale', label: 'New Sale', icon: '➕', roles: ['ADMIN','MANAGER','SALES'] },
-        { key: 'sales', label: 'Sales History', icon: '🧾', roles: ['ADMIN','MANAGER','SALES'] },
+        { label: 'Sales', icon: '🛒', group: true, roles: ['ADMIN','MANAGER','SALES','CASHIER'] },
+        { key: 'new-sale', label: 'New Sale', icon: '➕', roles: ['ADMIN','MANAGER','SALES','CASHIER'] },
+        { key: 'sales', label: 'Sales History', icon: '🧾', roles: ['ADMIN','MANAGER','SALES','CASHIER'] },
         { label: 'Inventory', icon: '📦', group: true, roles: ['ADMIN','MANAGER','INVENTORY'] },
         { key: 'products', label: 'Products', icon: '🏷️', roles: ['ADMIN','MANAGER','INVENTORY'] },
         { key: 'low-stock', label: 'Low Stock', icon: '⚠️', roles: ['ADMIN','MANAGER','INVENTORY','PROCUREMENT'] },
@@ -85,7 +85,7 @@
         $('app').classList.remove('hidden');
         renderSidebar();
         bindShellEvents();
-        navigate('dashboard');
+        navigate(Api.user().role === 'CASHIER' ? 'new-sale' : 'dashboard');
     }
 
     function renderSidebar() {
@@ -112,6 +112,7 @@
         $('user-name-top').textContent = u.displayName || u.username;
         $('user-role').textContent = u.role;
         $('sidebar-user').innerHTML = `<strong>${Api.esc(u.username)}</strong><br>${Api.esc(u.displayName || '')}`;
+        if (u.role === 'CASHIER') $('notif-btn').classList.add('hidden');
     }
 
     function bindShellEvents() {
@@ -421,7 +422,7 @@
         };
         $('pos-checkout').disabled = true;
         try {
-            const sale = await Api.post('/sales', payload);
+            const sale = await Api.post(Api.user().role === 'CASHIER' ? '/v1/cashier/sales' : '/sales', payload);
             Api.toast(`Sale ${sale.saleNumber} completed`, 'success');
             cart = [];
             showReceipt(sale);
@@ -534,7 +535,7 @@
             const params = new URLSearchParams({ q: term || '' });
             if ($('sales-from').value) params.set('from', $('sales-from').value);
             if ($('sales-to').value) params.set('to', $('sales-to').value);
-            const sales = await Api.get('/sales?' + params.toString());
+            const sales = await Api.get(Api.user().role === 'CASHIER' ? '/v1/cashier/sales' : '/sales?' + params.toString());
             currentSales = sales;
             const tbody = $('sales-tbody');
             tbody.innerHTML = sales.map(s => `<tr>

@@ -51,4 +51,11 @@ public class PurchaseOrderRepository extends GenericRepository<PurchaseOrder, Lo
                 .setLockMode(LockModeType.PESSIMISTIC_WRITE)
                 .getResultStream().findFirst();
     }
+
+    public java.util.Optional<PurchaseOrder> findByProgressToken(String token) {
+        return em.createQuery("SELECT po FROM PurchaseOrder po WHERE po.progressToken = :token", PurchaseOrder.class)
+                .setParameter("token", token)
+                .setLockMode(LockModeType.PESSIMISTIC_WRITE)
+                .getResultStream().findFirst();
+    }
 }

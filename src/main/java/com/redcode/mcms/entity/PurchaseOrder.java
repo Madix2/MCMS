@@ -55,6 +55,12 @@ public class PurchaseOrder implements Serializable {
     @Column(name = "token_expiry_timestamp")
     private LocalDateTime tokenExpiryTimestamp;
 
+    @Column(name = "progress_token", length = 512)
+    private String progressToken;
+
+    @Column(name = "progress_token_expiry_timestamp")
+    private LocalDateTime progressTokenExpiryTimestamp;
+
     @Column(name = "received_by", length = 100)
     private String receivedBy;
 
@@ -87,6 +93,10 @@ public class PurchaseOrder implements Serializable {
     public void setConfirmationToken(String confirmationToken) { this.confirmationToken = confirmationToken; }
     public LocalDateTime getTokenExpiryTimestamp() { return tokenExpiryTimestamp; }
     public void setTokenExpiryTimestamp(LocalDateTime tokenExpiryTimestamp) { this.tokenExpiryTimestamp = tokenExpiryTimestamp; }
+    public String getProgressToken() { return progressToken; }
+    public void setProgressToken(String progressToken) { this.progressToken = progressToken; }
+    public LocalDateTime getProgressTokenExpiryTimestamp() { return progressTokenExpiryTimestamp; }
+    public void setProgressTokenExpiryTimestamp(LocalDateTime value) { this.progressTokenExpiryTimestamp = value; }
     public String getReceivedBy() { return receivedBy; }
     public void setReceivedBy(String receivedBy) { this.receivedBy = receivedBy; }
     public LocalDateTime getReceivedAt() { return receivedAt; }

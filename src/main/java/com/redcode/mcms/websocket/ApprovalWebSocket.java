@@ -44,6 +44,13 @@ public class ApprovalWebSocket {
         }
     }
 
+    public static void broadcastSupplierProgress(Long id, String poNumber, String supplier, String status) {
+        String json = "{\"event\":\"SUPPLIER_PROGRESS_UPDATED\",\"id\":" + id
+                + ",\"poNumber\":\"" + jsonEscape(poNumber) + "\",\"supplier\":\""
+                + jsonEscape(supplier) + "\",\"status\":\"" + jsonEscape(status) + "\"}";
+        for (Session session : SESSIONS) if (session.isOpen()) session.getAsyncRemote().sendText(json);
+    }
+
     private static String jsonEscape(String value) {
         return value == null ? "" : value.replace("\\", "\\\\").replace("\"", "\\\"");
     }

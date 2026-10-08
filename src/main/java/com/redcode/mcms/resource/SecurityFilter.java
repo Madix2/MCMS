@@ -80,8 +80,11 @@ public class SecurityFilter implements ContainerRequestFilter {
         }
 
         String path = requestContext.getUriInfo().getPath();
+        if (path.startsWith("/")) path = path.substring(1);
         if (user.getRole() == com.redcode.mcms.entity.Role.CASHIER
                 && !path.startsWith("v1/cashier/") && !path.equals("v1/cashier")
+                && !("GET".equalsIgnoreCase(requestContext.getMethod())
+                && (path.startsWith("products") || path.startsWith("customers")))
                 && !path.startsWith("auth/")) {
             throw new com.redcode.mcms.exception.ForbiddenException(
                     "CASHIER accounts are restricted to their own daily sales workflow.");

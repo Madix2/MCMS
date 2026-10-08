@@ -1,0 +1,9 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Supplier Delivery Progress</title>
+<style>body{font-family:Arial,sans-serif;background:#eef4f7;color:#19323c;display:grid;place-items:center;min-height:100vh;margin:0}main{background:#fff;padding:2rem;border-radius:14px;width:min(92vw,520px);text-align:center;box-shadow:0 12px 35px #19323c22}button{padding:.9rem 1.3rem;margin:.35rem;border:0;border-radius:8px;background:#146c94;color:#fff;font-weight:700;cursor:pointer}button:disabled{opacity:.6}#message{min-height:1.5rem}.success{color:#167044}.error{color:#a32626}</style>
+</head>
+<body><main><h1>Delivery Progress</h1><p>Choose the current progress of this purchase order.</p><div><button data-status="SHIPPED">Mark as Shipped</button><button data-status="DELAYED">Report Delay</button></div><p id="message" role="status" aria-live="polite"></p></main>
+<script>(function(){'use strict';const token=new URLSearchParams(location.search).get('token'),msg=document.getElementById('message');document.querySelectorAll('button[data-status]').forEach(function(button){button.addEventListener('click',async function(){if(!token){msg.textContent='This link is missing its token.';msg.className='error';return}document.querySelectorAll('button').forEach(b=>b.disabled=true);try{const r=await fetch(new URL('api/supplier-portal/update-progress',location.href),{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({token:token,status:button.dataset.status})});const body=await r.json().catch(()=>({}));if(!r.ok)throw new Error(body.message||'Update failed.');msg.textContent=body.message||'Progress updated.';msg.className='success'}catch(e){msg.textContent=e.message;msg.className='error';document.querySelectorAll('button').forEach(b=>b.disabled=false)}})})}())</script>
+</body></html>
