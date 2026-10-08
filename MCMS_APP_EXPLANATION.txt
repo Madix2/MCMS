@@ -335,7 +335,7 @@ Potential future improvements include:
 
 
 SUMMARY
-=======
+-------
 MCMS is a complete supermarket operations platform that centralizes retail
 management in one browser application. Its most important defining feature is
 that it is a JAKARTA EE 10 enterprise application: Jakarta technologies power
