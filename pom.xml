@@ -86,4 +86,33 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>migrate-db</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.flywaydb</groupId>
+                        <artifactId>flyway-maven-plugin</artifactId>
+                        <version>10.17.3</version>
+                        <configuration>
+                            <url>${env.MCMS_DB_URL}</url>
+                            <user>${env.MCMS_DB_USER}</user>
+                            <password>${env.MCMS_DB_PASSWORD}</password>
+                            <locations>
+                                <location>filesystem:${project.basedir}/database/migrations</location>
+                            </locations>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <phase>validate</phase>
+                                <goals><goal>migrate</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

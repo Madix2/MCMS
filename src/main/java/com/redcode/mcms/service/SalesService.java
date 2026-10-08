@@ -2,6 +2,7 @@ package com.redcode.mcms.service;
 
 import com.redcode.mcms.dto.SaleDto;
 import com.redcode.mcms.dto.SaleRequest;
+import com.redcode.mcms.dto.PageResponse;
 import com.redcode.mcms.entity.*;
 import com.redcode.mcms.exception.BusinessException;
 import com.redcode.mcms.exception.NotFoundException;
@@ -79,7 +80,8 @@ public class SalesService {
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public SaleDto createSale(SaleRequest request) {
-        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.ADMIN);
+        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.MANAGER,
+                AuthContext.RolePermission.ADMIN);
         return createSaleInternal(request, authContext.getUser().getId(), false);
     }
 
@@ -236,13 +238,15 @@ public class SalesService {
     }
 
     public SaleDto find(Long id) {
-        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.ADMIN);
+        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.MANAGER,
+                AuthContext.RolePermission.ADMIN);
         return toDto(saleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Sale not found.")));
     }
 
     public List<SaleDto> list(String search, LocalDate from, LocalDate to) {
-        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.ADMIN);
+        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.MANAGER,
+                AuthContext.RolePermission.ADMIN);
         if (from != null && to != null && from.isAfter(to)) {
             throw new BusinessException("The start date cannot be after the end date.");
         }
@@ -252,6 +256,17 @@ public class SalesService {
 
     public List<SaleDto> listByCustomer(Long customerId) {
         return saleRepository.findByCustomer(customerId).stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    public PageResponse<SaleDto> page(String search, LocalDate from, LocalDate to, int page, int size) {
+        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.MANAGER,
+                AuthContext.RolePermission.ADMIN);
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new BusinessException("The start date cannot be after the end date.");
+        }
+        List<SaleDto> items = saleRepository.searchPage(search, from, to, page, size).stream()
+                .map(this::toDto).collect(Collectors.toList());
+        return new PageResponse<>(items, page, size, saleRepository.countSearch(search, from, to));
     }
 
     public List<SaleDto> listByCashier(Long cashierId) {

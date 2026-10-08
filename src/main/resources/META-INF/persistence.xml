@@ -9,10 +9,8 @@
         <jta-data-source>jdbc/mcms</jta-data-source>
 
         <properties>
-            <!-- EclipseLink is Payara's default JPA provider; generate the schema
-                 automatically and target PostgreSQL. -->
-            <property name="eclipselink.ddl-generation" value="create-or-extend-tables"/>
-            <property name="eclipselink.ddl-generation.output-mode" value="database"/>
+            <!-- Schema changes are applied only by versioned SQL migrations. -->
+            <property name="eclipselink.ddl-generation" value="none"/>
             <property name="eclipselink.target-database" value="PostgreSQL"/>
             <property name="eclipselink.logging.level" value="WARNING"/>
             <property name="eclipselink.logging.timestamp" value="false"/>

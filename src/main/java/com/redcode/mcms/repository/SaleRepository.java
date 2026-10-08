@@ -20,6 +20,10 @@ public class SaleRepository extends GenericRepository<Sale, Long> {
     }
 
     public List<Sale> search(String term, LocalDate from, LocalDate to) {
+        return searchPage(term, from, to, 0, Integer.MAX_VALUE);
+    }
+
+    public List<Sale> searchPage(String term, LocalDate from, LocalDate to, int page, int size) {
         StringBuilder jpql = new StringBuilder("SELECT s FROM Sale s WHERE 1 = 1");
         boolean hasTerm = term != null && !term.trim().isEmpty();
         if (hasTerm) jpql.append(" AND (lower(s.saleNumber) LIKE :t OR lower(s.customer.fullName) LIKE :t)");
@@ -31,7 +35,20 @@ public class SaleRepository extends GenericRepository<Sale, Long> {
         if (hasTerm) query.setParameter("t", "%" + term.trim().toLowerCase() + "%");
         if (from != null) query.setParameter("from", from.atStartOfDay());
         if (to != null) query.setParameter("to", to.plusDays(1).atStartOfDay());
-        return query.getResultList();
+        return query.setFirstResult(page * size).setMaxResults(size).getResultList();
+    }
+
+    public long countSearch(String term, LocalDate from, LocalDate to) {
+        StringBuilder jpql = new StringBuilder("SELECT COUNT(s) FROM Sale s WHERE 1 = 1");
+        boolean hasTerm = term != null && !term.trim().isEmpty();
+        if (hasTerm) jpql.append(" AND (lower(s.saleNumber) LIKE :t OR lower(s.customer.fullName) LIKE :t)");
+        if (from != null) jpql.append(" AND s.saleDate >= :from");
+        if (to != null) jpql.append(" AND s.saleDate < :to");
+        var query = em.createQuery(jpql.toString(), Long.class);
+        if (hasTerm) query.setParameter("t", "%" + term.trim().toLowerCase() + "%");
+        if (from != null) query.setParameter("from", from.atStartOfDay());
+        if (to != null) query.setParameter("to", to.plusDays(1).atStartOfDay());
+        return query.getSingleResult();
     }
 
     public List<Sale> findAllOrderedDesc() {

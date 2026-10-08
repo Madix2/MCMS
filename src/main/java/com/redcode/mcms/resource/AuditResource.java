@@ -1,6 +1,7 @@
 package com.redcode.mcms.resource;
 
 import com.redcode.mcms.entity.AuditLog;
+import com.redcode.mcms.dto.PageResponse;
 import com.redcode.mcms.repository.AuditLogRepository;
 import com.redcode.mcms.security.Secured;
 import jakarta.inject.Inject;
@@ -27,10 +28,15 @@ public class AuditResource {
     private AuditLogRepository auditLogRepository;
 
     @GET
-    public List<Map<String, Object>> list(@DefaultValue("100") @QueryParam("limit") int limit) {
-        return auditLogRepository.findRecent(limit).stream()
+    public PageResponse<Map<String, Object>> list(@DefaultValue("0") @QueryParam("page") int page,
+                                                  @DefaultValue("25") @QueryParam("size") int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new com.redcode.mcms.exception.BusinessException("page must be >= 0 and size must be between 1 and 100.");
+        }
+        List<Map<String, Object>> items = auditLogRepository.findPage(page, size).stream()
                 .map(this::toMap)
                 .collect(Collectors.toList());
+        return new PageResponse<>(items, page, size, auditLogRepository.countAll());
     }
 
     private Map<String, Object> toMap(AuditLog log) {

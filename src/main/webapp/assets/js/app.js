@@ -545,9 +545,10 @@
             if ($('sales-from').value) params.set('from', $('sales-from').value);
             if ($('sales-to').value) params.set('to', $('sales-to').value);
             const sales = await Api.get(Api.user().role === 'CASHIER' ? '/v1/cashier/sales' : '/sales?' + params.toString());
-            currentSales = sales;
+            currentSales = sales.items || sales;
+            const rows = currentSales;
             const tbody = $('sales-tbody');
-            tbody.innerHTML = sales.map(s => `<tr>
+            tbody.innerHTML = rows.map(s => `<tr>
                 <td><strong>${Api.esc(s.saleNumber)}</strong></td>
                 <td>${Api.dateTime(s.saleDate)}</td>
                 <td>${Api.esc(s.customerName || 'Walk-in')}</td>
@@ -1190,7 +1191,8 @@
     }
     /* ================= AUDIT LOGS ================= */
     async function viewAudit(view) {
-        const logs = await Api.get('/audit?limit=200');
+        const auditPage = await Api.get('/audit?page=0&size=25');
+        const logs = auditPage.items || auditPage;
         view.innerHTML = `<div class="page-header"><div><h2>Audit Logs</h2><div class="sub">Immutable record of user actions</div></div></div>
             <div class="card"><div class="card-body"><div class="table-wrap"><table class="tbl"><thead><tr>
             <th>Timestamp</th><th>User</th><th>Action</th><th>Entity</th><th>Description</th>

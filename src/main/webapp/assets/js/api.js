@@ -1,5 +1,20 @@
 /* MegaMart Central Management System - API client helper. */
 const Api = (() => {
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = async function (input, init) {
+        const response = await nativeFetch(input, init);
+        const url = typeof input === 'string' ? input : input.url;
+        if (response.status === 401 && !String(url).includes('/auth/login')) {
+            localStorage.removeItem('mcms_token');
+            localStorage.removeItem('mcms_user');
+            const error = document.getElementById('login-error');
+            if (error) { error.textContent = 'Your session expired. Please sign in again.'; error.classList.remove('hidden'); }
+            const app = document.getElementById('app');
+            const login = document.getElementById('login-screen');
+            if (app && login) { app.classList.add('hidden'); login.classList.remove('hidden'); }
+        }
+        return response;
+    };
     const TOKEN_KEY = 'mcms_token';
     const USER_KEY = 'mcms_user';
     // Resolve relative to the deployed WAR so custom context roots work.

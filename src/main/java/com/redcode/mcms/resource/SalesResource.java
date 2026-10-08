@@ -2,6 +2,7 @@ package com.redcode.mcms.resource;
 
 import com.redcode.mcms.dto.SaleDto;
 import com.redcode.mcms.dto.SaleRequest;
+import com.redcode.mcms.dto.PageResponse;
 import com.redcode.mcms.security.Secured;
 import com.redcode.mcms.service.SalesService;
 import jakarta.inject.Inject;
@@ -30,10 +31,15 @@ public class SalesResource {
     private SalesService salesService;
 
     @GET
-    public List<SaleDto> list(@QueryParam("q") String q, @QueryParam("from") String from,
-                              @QueryParam("to") String to) {
+    public PageResponse<SaleDto> list(@QueryParam("q") String q, @QueryParam("from") String from,
+                                      @QueryParam("to") String to,
+                                      @DefaultValue("0") @QueryParam("page") int page,
+                                      @DefaultValue("25") @QueryParam("size") int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new com.redcode.mcms.exception.BusinessException("page must be >= 0 and size must be between 1 and 100.");
+        }
         try {
-            return salesService.list(q, parseDate(from), parseDate(to));
+            return salesService.page(q, parseDate(from), parseDate(to), page, size);
         } catch (java.time.format.DateTimeParseException e) {
             throw new com.redcode.mcms.exception.BusinessException("Dates must use YYYY-MM-DD format.");
         }
