@@ -236,11 +236,13 @@ public class SalesService {
     }
 
     public SaleDto find(Long id) {
+        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.ADMIN);
         return toDto(saleRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Sale not found.")));
     }
 
     public List<SaleDto> list(String search, LocalDate from, LocalDate to) {
+        authContext.requireRole(AuthContext.RolePermission.SALES, AuthContext.RolePermission.ADMIN);
         if (from != null && to != null && from.isAfter(to)) {
             throw new BusinessException("The start date cannot be after the end date.");
         }
@@ -254,6 +256,12 @@ public class SalesService {
 
     public List<SaleDto> listByCashier(Long cashierId) {
         return saleRepository.findByCashier(cashierId).stream().map(this::toDto).collect(Collectors.toList());
+    }
+
+    public List<SaleDto> listTodayByCashier(Long cashierId) {
+        LocalDate today = LocalDate.now();
+        return saleRepository.findTodayByCashier(cashierId, today.atStartOfDay(), today.plusDays(1).atStartOfDay())
+                .stream().map(this::toDto).collect(Collectors.toList());
     }
 
     public long totalUniqueCustomers() { return customerRepository.count(); }

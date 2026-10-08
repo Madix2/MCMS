@@ -79,6 +79,14 @@ public class SecurityFilter implements ContainerRequestFilter {
             throw new UnauthorizedException("Your account has been deactivated. Contact an administrator.");
         }
 
+        String path = requestContext.getUriInfo().getPath();
+        if (user.getRole() == com.redcode.mcms.entity.Role.CASHIER
+                && !path.startsWith("v1/cashier/") && !path.equals("v1/cashier")
+                && !path.startsWith("auth/")) {
+            throw new com.redcode.mcms.exception.ForbiddenException(
+                    "CASHIER accounts are restricted to their own daily sales workflow.");
+        }
+
         authContext.setUser(new CurrentUser(user.getId(), user.getUsername(), user.getRole().name()));
         final String role = user.getRole().name();
         final String userId = Long.toString(user.getId());

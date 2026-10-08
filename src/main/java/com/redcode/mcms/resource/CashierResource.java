@@ -1,6 +1,5 @@
 package com.redcode.mcms.resource;
 
-import com.redcode.mcms.dto.CashierDashboardDto;
 import com.redcode.mcms.dto.SaleDto;
 import com.redcode.mcms.dto.SaleRequest;
 import com.redcode.mcms.security.AuthContext;
@@ -33,17 +32,10 @@ public class CashierResource {
     @Context private SecurityContext securityContext;
 
     @GET
-    @Path("/dashboard")
-    public CashierDashboardDto dashboard() {
-        requireCashier();
-        return new CashierDashboardDto(salesService.totalUniqueCustomers());
-    }
-
-    @GET
     @Path("/sales")
     public List<SaleDto> history() {
         requireCashier();
-        return salesService.listByCashier(cashierId());
+        return salesService.listTodayByCashier(cashierId());
     }
 
     @POST
